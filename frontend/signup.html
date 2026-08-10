@@ -1,0 +1,56 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+  </nav>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h1>Create your account</h1>
+      <p class="sub">Sign up as a student to book hostels, or as an owner to list your property.</p>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <form id="signupForm">
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input type="text" id="fullName" required placeholder="Ama Owusu" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required minlength="6" placeholder="At least 6 characters" />
+        </div>
+        <div class="field">
+          <label for="role">I am a</label>
+          <select id="role">
+            <option value="student">Student looking for a hostel</option>
+            <option value="owner">Hostel owner</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Create account</button>
+      </form>
+
+      <p class="auth-switch">Already have an account? <a href="signin.html">Sign in</a></p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </div>
+    <div class="nav-links">
+      <a href="#hostels">Hostels</a>
+      <a href="#regions">Regions</a>
+      <a href="#how">How it works</a>
+      <a href="signup.html?role=owner">For owners</a>
+    </div>
+    <div class="nav-actions">
+      <!-- This is the Sign in button: it takes visitors to signin.html,
+           and after a successful login they land in the web app (dashboard.html) -->
+      <a href="signin.html" class="btn btn-outline">Sign in</a>
+      <a href="signup.html" class="btn btn-primary">Get started</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="pill">Verified listings · Real availability</span>
+    <h1>Find a verified hostel near your campus</h1>
+    <p>Browse accurate, up-to-date hostel listings across Ghana — prices, room types, security features and transport access, all in one place.</p>
+
+    <form class="search-bar" id="searchForm">
+      <select id="regionInput">
+        <option value="">All regions</option>
+        <option value="Legon">Legon</option>
+        <option value="Kumasi">Kumasi</option>
+      </select>
+      <select id="roomTypeInput">
+        <option value="">Any room type</option>
+        <option value="1 in a room">1 in a room</option>
+        <option value="2 in a room">2 in a room</option>
+        <option value="4 in a room">4 in a room</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </header>
+
+  <section class="section" id="hostels">
+    <h2>Featured hostels</h2>
+    <div class="hostel-grid" id="hostelGrid">
+      <p class="empty-state">Loading hostels…</p>
+    </div>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/landing.js"></script>
+</body>
+</html>
