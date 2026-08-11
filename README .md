@@ -1,12 +1,13 @@
 # Smart Hostel Finder
 
-**Stack**
+Stack
+
 - Database: PostgreSQL (SQL)
 - Backend: Node.js + Express (JavaScript)
 - Frontend: HTML, CSS, vanilla JavaScript
 
-**Folder structure**
-```
+Folder structure
+
 smart-hostel-finder/
   database/
     schema.sql      -> creates all tables
@@ -26,4 +27,3 @@ smart-hostel-finder/
     dashboard.html    -> the "web app" (only reachable after signing in)
     css/style.css
     js/api.js, landing.js, auth.js, dashboard.js
-```

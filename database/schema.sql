@@ -1,7 +1,6 @@
 -- =========================================================
 -- Smart Hostel Finder — Database Schema
 -- Language: SQL (PostgreSQL)
--- Run this once against your database to create all tables.
 -- =========================================================
 
 -- Clean slate (safe to re-run while developing)

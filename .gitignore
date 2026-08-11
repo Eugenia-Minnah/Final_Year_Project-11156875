@@ -1,0 +1,9 @@
+# Environment variables (contains real passwords/secrets — never commit this)
+.env
+
+# Node dependencies (reinstalled via npm install, no need to store in git)
+node_modules/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
