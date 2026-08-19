@@ -8,6 +8,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const hostelRoutes = require('./routes/hostels');
+const locationRoutes = require('./routes/locations');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.json());      // lets us read JSON from request bodies
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/hostels', hostelRoutes);
+app.use('/api/locations', locationRoutes);
 
 // Simple health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

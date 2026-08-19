@@ -32,4 +32,20 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+// Optional version: if a valid token is present, attach req.user; otherwise
+// just continue as a normal guest request. Used for routes that are public
+// but can personalize their response when the visitor happens to be logged in.
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      req.user = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      // invalid/expired token — just treat as a guest, don't error out
+    }
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireRole, optionalAuth };

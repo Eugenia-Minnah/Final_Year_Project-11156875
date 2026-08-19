@@ -14,6 +14,7 @@
       <span class="badge">S</span>
       SmartHostel
     </a>
+    <a class="back-link" onclick="history.back()">← Back</a>
   </nav>
 
   <div class="auth-wrapper">
@@ -31,6 +32,9 @@
         <div class="field">
           <label for="password">Password</label>
           <input type="password" id="password" required placeholder="••••••••" />
+          <div style="text-align: right; margin-top: 6px;">
+            <a href="forgot-password.html" style="font-size: 13px; color: var(--green); font-weight: 600;">Forgot password?</a>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary full-width">Sign in</button>
       </form>

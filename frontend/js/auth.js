@@ -43,6 +43,44 @@ if (signupForm) {
     document.getElementById('role').value = 'owner';
   }
 
+  const campusFields = document.getElementById('campusFields');
+  const roleSelect = document.getElementById('role');
+
+  function toggleCampusFields() {
+    campusFields.style.display = roleSelect.value === 'student' ? 'block' : 'none';
+  }
+  roleSelect.addEventListener('change', toggleCampusFields);
+  toggleCampusFields();
+
+  // Reuse the same cascading dropdown logic used on the landing page/dashboard
+  let signupLocationController = {};
+
+  const signupRegionControl = createSearchableSelect({
+    inputEl: document.getElementById('signupRegion'),
+    hiddenEl: document.getElementById('signupRegionValue'),
+    dropdownEl: document.getElementById('signupRegionDropdown'),
+    onChange: (regionId) => signupLocationController.loadUniversities && signupLocationController.loadUniversities(regionId),
+  });
+
+  const signupUniversityControl = createSearchableSelect({
+    inputEl: document.getElementById('signupUniversity'),
+    hiddenEl: document.getElementById('signupUniversityValue'),
+    dropdownEl: document.getElementById('signupUniversityDropdown'),
+    onChange: (universityId) => signupLocationController.loadCampuses && signupLocationController.loadCampuses(universityId, signupRegionControl.getValue()),
+  });
+
+  const signupCampusControl = createSearchableSelect({
+    inputEl: document.getElementById('signupCampus'),
+    hiddenEl: document.getElementById('signupCampusValue'),
+    dropdownEl: document.getElementById('signupCampusDropdown'),
+  });
+
+  signupLocationController = setupLocationDropdowns({
+    regionControl: signupRegionControl,
+    universityControl: signupUniversityControl,
+    campusControl: signupCampusControl,
+  });
+
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -52,7 +90,8 @@ if (signupForm) {
           fullName: document.getElementById('fullName').value,
           email: document.getElementById('email').value,
           password: document.getElementById('password').value,
-          role: document.getElementById('role').value,
+          role: roleSelect.value,
+          homeCampusId: signupCampusControl.getValue() || null,
         },
       });
       saveSession(data);

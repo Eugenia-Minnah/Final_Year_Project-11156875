@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smart Hostel Finder</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 
@@ -14,6 +16,7 @@
       <span class="badge">S</span>
       SmartHostel
     </div>
+    <a class="back-link" onclick="history.back()">← Back</a>
     <div class="nav-links">
       <a href="#hostels">Hostels</a>
       <a href="#regions">Regions</a>
@@ -34,11 +37,21 @@
     <p>Browse accurate, up-to-date hostel listings across Ghana — prices, room types, security features and transport access, all in one place.</p>
 
     <form class="search-bar" id="searchForm">
-      <select id="regionInput">
-        <option value="">All regions</option>
-        <option value="Legon">Legon</option>
-        <option value="Kumasi">Kumasi</option>
-      </select>
+      <div class="searchable-select">
+        <input type="text" id="regionInput" placeholder="Type or select a region" autocomplete="off" />
+        <input type="hidden" id="regionInputValue" />
+        <div class="searchable-dropdown" id="regionInputDropdown"></div>
+      </div>
+      <div class="searchable-select">
+        <input type="text" id="universityInput" placeholder="Select a region first" autocomplete="off" disabled />
+        <input type="hidden" id="universityInputValue" />
+        <div class="searchable-dropdown" id="universityInputDropdown"></div>
+      </div>
+      <div class="searchable-select">
+        <input type="text" id="campusInput" placeholder="All campuses" autocomplete="off" disabled />
+        <input type="hidden" id="campusInputValue" />
+        <div class="searchable-dropdown" id="campusInputDropdown"></div>
+      </div>
       <select id="roomTypeInput">
         <option value="">Any room type</option>
         <option value="1 in a room">1 in a room</option>
@@ -50,13 +63,65 @@
   </header>
 
   <section class="section" id="hostels">
-    <h2>Featured hostels</h2>
+    <div id="resultsHeader"></div>
+
+    <div class="results-controls" style="margin-bottom:16px;">
+      <button type="button" class="btn btn-outline" id="filterToggle">Filter</button>
+      <select id="sortInput">
+        <option value="recommended">Sort: Recommended</option>
+        <option value="closest">Sort: Closest</option>
+        <option value="farthest">Sort: Farthest</option>
+        <option value="price_low">Sort: Lowest price</option>
+        <option value="price_high">Sort: Highest price</option>
+        <option value="rating">Sort: Highest rated</option>
+        <option value="availability">Sort: Most available</option>
+      </select>
+    </div>
+
+    <div id="filterPanel" style="display:none; background:white; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+      <div class="filters">
+        <input type="number" id="minPriceInput" placeholder="Min price (GH₵)" />
+        <input type="number" id="maxPriceInput" placeholder="Max price (GH₵)" />
+        <select id="availabilityInput">
+          <option value="">Any availability</option>
+          <option value="available">Available</option>
+          <option value="limited">Limited availability</option>
+          <option value="full">Fully occupied</option>
+        </select>
+        <select id="maxDistanceInput">
+          <option value="">Any distance</option>
+          <option value="1">Within 1 km</option>
+          <option value="3">Within 3 km</option>
+          <option value="5">Within 5 km</option>
+          <option value="10">Within 10 km</option>
+        </select>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; font-size:14px;">
+        <label><input type="checkbox" class="feature-checkbox" value="security"> Security</label>
+        <label><input type="checkbox" class="feature-checkbox" value="cctv"> CCTV</label>
+        <label><input type="checkbox" class="feature-checkbox" value="wifi"> Wi-Fi</label>
+        <label><input type="checkbox" class="feature-checkbox" value="parking"> Parking</label>
+        <label><input type="checkbox" class="feature-checkbox" value="water"> Water supply</label>
+        <label><input type="checkbox" class="feature-checkbox" value="electricity"> Electricity backup</label>
+        <label><input type="checkbox" class="feature-checkbox" value="shuttle"> Shuttle</label>
+      </div>
+      <button type="button" class="btn btn-primary" id="applyFiltersBtn" style="margin-top:14px;">Apply filters</button>
+    </div>
+
     <div class="hostel-grid" id="hostelGrid">
       <p class="empty-state">Loading hostels…</p>
     </div>
   </section>
 
+  <section class="section" id="map-section">
+    <h2>Hostel locations</h2>
+    <div id="hostelMap" style="height: 420px; border-radius: 14px; border: 1px solid var(--border);"></div>
+  </section>
+
   <script src="js/api.js"></script>
+  <script src="js/searchable-select.js"></script>
+  <script src="js/locations.js"></script>
+  <script src="js/map.js"></script>
   <script src="js/landing.js"></script>
 </body>
 </html>

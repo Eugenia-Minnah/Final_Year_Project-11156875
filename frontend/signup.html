@@ -14,6 +14,7 @@
       <span class="badge">S</span>
       SmartHostel
     </a>
+    <a class="back-link" onclick="history.back()">← Back</a>
   </nav>
 
   <div class="auth-wrapper">
@@ -43,6 +44,34 @@
             <option value="owner">Hostel owner</option>
           </select>
         </div>
+
+        <div id="campusFields">
+          <div class="field">
+            <label for="signupRegion">Region</label>
+            <div class="searchable-select" style="width:100%;">
+              <input type="text" id="signupRegion" placeholder="Type or select a region" autocomplete="off" />
+              <input type="hidden" id="signupRegionValue" />
+              <div class="searchable-dropdown" id="signupRegionDropdown"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="signupUniversity">University</label>
+            <div class="searchable-select" style="width:100%;">
+              <input type="text" id="signupUniversity" placeholder="Select a region first" autocomplete="off" disabled />
+              <input type="hidden" id="signupUniversityValue" />
+              <div class="searchable-dropdown" id="signupUniversityDropdown"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="signupCampus">My campus</label>
+            <div class="searchable-select" style="width:100%;">
+              <input type="text" id="signupCampus" placeholder="Select a university first" autocomplete="off" disabled />
+              <input type="hidden" id="signupCampusValue" />
+              <div class="searchable-dropdown" id="signupCampusDropdown"></div>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary full-width">Create account</button>
       </form>
 
@@ -51,6 +80,8 @@
   </div>
 
   <script src="js/api.js"></script>
+  <script src="js/searchable-select.js"></script>
+  <script src="js/locations.js"></script>
   <script src="js/auth.js"></script>
 </body>
 </html>

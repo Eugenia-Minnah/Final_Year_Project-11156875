@@ -1,0 +1,32 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hostel details — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+    <div class="nav-actions">
+      <a class="back-link" onclick="history.back()">← Back</a>
+    </div>
+  </nav>
+
+  <section class="section" id="hostelDetail">
+    <p class="empty-state">Loading hostel details…</p>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/hostel-detail.js"></script>
+</body>
+</html>

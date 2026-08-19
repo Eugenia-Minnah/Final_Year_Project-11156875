@@ -274,3 +274,101 @@ a { text-decoration: none; color: inherit; }
   text-align: center;
   padding: 60px 20px;
 }
+
+/* Campus pin on the map — bigger and distinct from hostel pins */
+.campus-marker-icon {
+  font-size: 26px;
+  text-align: center;
+  line-height: 30px;
+}
+
+/* Back button, used across secondary pages */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.back-link:hover { color: var(--navy); }
+
+/* Results header showing current search context */
+.results-header {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.results-header .breadcrumb {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.results-header .breadcrumb strong { color: var(--navy); }
+.results-controls {
+  display: flex;
+  gap: 10px;
+}
+.results-controls select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Searchable type-to-filter dropdown (used for Region/University/Campus) */
+.searchable-select {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+}
+.searchable-select input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+.searchable-select input[type="text"]:disabled {
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.searchable-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(11, 27, 43, 0.12);
+  z-index: 50;
+}
+.searchable-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--navy);
+  background: white;
+}
+.searchable-option:hover {
+  background: var(--bg);
+  color: var(--navy);
+}
+.searchable-empty {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
