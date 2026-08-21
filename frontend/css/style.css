@@ -332,10 +332,18 @@ a { text-decoration: none; color: inherit; }
 .searchable-select input[type="text"] {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
+  font-family: inherit;
   background: white;
+  color: #111827;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.searchable-select input[type="text"]:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(14, 124, 102, 0.12);
 }
 .searchable-select input[type="text"]:disabled {
   background: var(--bg);
@@ -345,30 +353,56 @@ a { text-decoration: none; color: inherit; }
 .searchable-dropdown {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   max-height: 220px;
   overflow-y: auto;
   background: white;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(11, 27, 43, 0.12);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.08);
   z-index: 50;
+  padding: 4px;
+  /* subtle, unobtrusive scrollbar (Firefox) */
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.searchable-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.searchable-dropdown::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+.searchable-dropdown::-webkit-scrollbar-track {
+  background: transparent;
 }
 .searchable-option {
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 14.5px;
+  font-family: inherit;
+  font-weight: 400;
+  font-style: normal;
+  text-align: left;
   cursor: pointer;
-  color: var(--navy);
+  color: #111827;
   background: white;
+  border-radius: 6px;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 .searchable-option:hover {
-  background: var(--bg);
-  color: var(--navy);
+  background: #f3f4f6;
+  color: #111827;
+}
+.searchable-option.selected {
+  background: #eef2f1;
+  color: #111827;
+  font-weight: 500;
 }
 .searchable-empty {
   padding: 10px 12px;
   font-size: 14px;
+  font-family: inherit;
   color: var(--text-muted);
 }

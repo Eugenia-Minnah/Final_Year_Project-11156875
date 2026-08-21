@@ -10,6 +10,84 @@ if (!isLoggedIn()) {
 const user = currentUser();
 if (user) {
   document.getElementById('userName').textContent = user.fullName || user.email;
+  if (user.role === 'owner' || user.role === 'admin') {
+    document.getElementById('addHostelBtn').style.display = 'inline-block';
+    document.getElementById('myHostelsSection').style.display = 'block';
+    loadMyHostels();
+  }
+  if (user.role === 'admin') {
+    document.getElementById('adminLinkBtn').style.display = 'inline-block';
+  }
+  if (user.role === 'student') {
+    document.getElementById('myBookingsSection').style.display = 'block';
+    loadMyBookings();
+  }
+}
+
+async function loadMyBookings() {
+  const list = document.getElementById('myBookingsList');
+  list.innerHTML = '<p class="empty-state">Loading your bookings…</p>';
+  try {
+    const bookings = await apiRequest('/api/bookings/mine', { auth: true });
+    if (bookings.length === 0) {
+      list.innerHTML = '<p class="empty-state">You haven\'t booked a room yet.</p>';
+      return;
+    }
+    list.innerHTML = bookings.map(b => `
+      <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
+        <div>
+          <strong><a href="hostel.html?id=${b.hostel_id}">${b.hostel_name}</a></strong>
+          <div style="font-size:13px; color:var(--text-muted);">
+            ${b.room_type} &middot; Deposit GH₵${Number(b.deposit_amount).toLocaleString()}
+            &middot; Status: <span style="text-transform:capitalize; font-weight:600; color:${b.status === 'cancelled' ? 'var(--text-muted)' : 'var(--green)'};">${b.status}</span>
+          </div>
+        </div>
+        ${b.status !== 'cancelled'
+          ? `<button type="button" class="btn btn-outline cancel-booking-btn" data-booking-id="${b.id}">Cancel</button>`
+          : ''}
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Cancel this booking?')) return;
+        try {
+          await apiRequest(`/api/bookings/${btn.getAttribute('data-booking-id')}/cancel`, { method: 'POST', auth: true });
+          loadMyBookings();
+        } catch (err) {
+          alert('Could not cancel booking: ' + err.message);
+        }
+      });
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="empty-state">Could not load your bookings: ${err.message}</p>`;
+  }
+}
+
+async function loadMyHostels() {
+  const list = document.getElementById('myHostelsList');
+  list.innerHTML = '<p class="empty-state">Loading your hostels…</p>';
+  try {
+    const hostels = await apiRequest('/api/hostels/mine', { auth: true });
+    if (hostels.length === 0) {
+      list.innerHTML = '<p class="empty-state">You haven\'t added any hostels yet. Use "+ Add hostel" above to get started.</p>';
+      return;
+    }
+    list.innerHTML = hostels.map(h => `
+      <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
+        <div>
+          <strong>${h.name}</strong> ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}
+          <div style="font-size:13px; color:var(--text-muted);">${h.city ? h.city + ', ' : ''}${h.region_name || 'No region set'}</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <a href="hostel.html?id=${h.id}" class="btn btn-outline">View</a>
+          <a href="edit-hostel.html?id=${h.id}" class="btn btn-primary">Edit</a>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = `<p class="empty-state">Could not load your hostels: ${err.message}</p>`;
+  }
 }
 
 document.getElementById('logoutBtn').addEventListener('click', logout);

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add a hostel — Smart Hostel Finder</title>
+  <title>Edit hostel — Smart Hostel Finder</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -20,13 +20,13 @@
   </nav>
 
   <section class="section" style="max-width: 760px;">
-    <h2>Add a new hostel</h2>
-    <p style="color: var(--text-muted);">Fill in your hostel's details, then click its exact spot on the map — the coordinates fill in automatically.</p>
+    <h2>Edit hostel</h2>
+    <p style="color: var(--text-muted);" id="loadingNote">Loading your hostel's details…</p>
 
     <div class="error-msg" id="errorMsg"></div>
     <div class="error-msg" id="successMsg" style="background:#E4F3EF; color:var(--green-dark);"></div>
 
-    <form id="addHostelForm">
+    <form id="editHostelForm">
       <div class="field">
         <label for="hostelName">Hostel name</label>
         <input type="text" id="hostelName" required placeholder="e.g. Green Court Hostel" />
@@ -91,24 +91,21 @@
 
       <div class="field">
         <label>Room types</label>
-        <p style="font-size:13px; color:var(--text-muted); margin:0 0 8px;">
-          Set your own deposit amount for each room type. Leave the deposit blank if you'd rather it default to 10% of the yearly price.
-        </p>
         <div id="roomRows"></div>
         <button type="button" class="btn btn-outline" id="addRoomRowBtn" style="margin-top:8px;">+ Add another room type</button>
       </div>
 
       <p style="font-size:12px; color:var(--text-muted); margin-top:6px;">
-        Note: skipping the location means this hostel won't show a distance or map pin for students yet. There's no self-service "edit hostel" page built yet, so adding the location later would need a quick database update — worth filling in now if you can.
+        Note: skipping the location means this hostel won't show a distance or map pin for students. You can always come back to this page later to add it.
       </p>
 
-      <button type="submit" class="btn btn-primary full-width" style="margin-top:12px;">Save hostel</button>
+      <button type="submit" class="btn btn-primary full-width" style="margin-top:12px;">Save changes</button>
     </form>
   </section>
 
   <script src="js/api.js"></script>
   <script src="js/searchable-select.js"></script>
   <script src="js/locations.js"></script>
-  <script src="js/add-hostel.js"></script>
+  <script src="js/edit-hostel.js"></script>
 </body>
 </html>

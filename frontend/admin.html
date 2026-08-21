@@ -1,0 +1,29 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="dashboard.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+    <a class="back-link" onclick="history.back()">← Back</a>
+  </nav>
+
+  <section class="section">
+    <h2>Pending hostel approvals</h2>
+    <p style="color: var(--text-muted);">New hostel listings appear here until an admin approves them. Approving marks them "Verified" on the site; rejecting removes the listing entirely.</p>
+    <div id="pendingList"><p class="empty-state">Loading…</p></div>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

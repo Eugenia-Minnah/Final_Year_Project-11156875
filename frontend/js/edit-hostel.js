@@ -1,7 +1,7 @@
 // Language: JavaScript (runs in the browser)
-// Powers the "Add a hostel" form: owner-only guard, a click-on-map location
-// picker (auto-fills latitude/longitude so nobody types coordinates by hand),
-// and dynamic room-type rows submitted together with the hostel.
+// Powers the "Edit hostel" form. Same location picker and room-row pattern
+// as add-hostel.js, but pre-fills everything from the existing hostel and
+// submits via PUT instead of POST.
 
 // ---------- Guard: owners (or admins) only ----------
 if (!isLoggedIn()) {
@@ -9,22 +9,29 @@ if (!isLoggedIn()) {
 }
 const user = currentUser();
 if (user && user.role !== 'owner' && user.role !== 'admin') {
-  document.body.innerHTML = '<div class="section"><p class="empty-state">Only hostel owners can add a listing. <a href="dashboard.html">Back to dashboard</a></p></div>';
+  document.body.innerHTML = '<div class="section"><p class="empty-state">Only hostel owners can edit a listing. <a href="dashboard.html">Back to dashboard</a></p></div>';
 }
 
-// ---------- Region picker (standalone — a hostel has its own region, not a fixed campus) ----------
+const hostelId = new URLSearchParams(window.location.search).get('id');
+if (!hostelId) {
+  document.body.innerHTML = '<div class="section"><p class="empty-state">No hostel selected to edit. <a href="dashboard.html">Back to dashboard</a></p></div>';
+}
+
+// ---------- Region picker ----------
 const regionControl = createSearchableSelect({
   inputEl: document.getElementById('hostelRegion'),
   hiddenEl: document.getElementById('hostelRegionValue'),
   dropdownEl: document.getElementById('hostelRegionDropdown'),
 });
 
+let regionsLoaded = null;
 (async function loadRegions() {
   const regions = await apiRequest('/api/locations/regions');
+  regionsLoaded = regions;
   regionControl.setOptions(regions.map(r => ({ id: String(r.id), label: r.name })), 'Type or select a region');
 })();
 
-// ---------- Click-on-map location picker ----------
+// ---------- Map ----------
 const pickerMap = L.map('pickerMap').setView([7.9465, -1.0232], 7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -33,26 +40,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let pickerMarker = null;
 
-pickerMap.on('click', (e) => {
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-
-  if (pickerMarker) {
-    pickerMarker.setLatLng(e.latlng);
-  } else {
-    pickerMarker = L.marker(e.latlng).addTo(pickerMap);
-  }
-
-  document.getElementById('hostelLat').value = lat.toFixed(6);
-  document.getElementById('hostelLng').value = lng.toFixed(6);
-  document.getElementById('coordsDisplay').textContent =
-    'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
-});
-
-// Matches things like "5.6494, -0.1870" or "5.6494,-0.1870" — a plain
-// latitude,longitude pair someone might paste in from their phone's GPS.
-const GPS_COORDINATE_PATTERN = /^\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
-
 function dropPinAt(lat, lng) {
   const latLng = { lat, lng };
   if (pickerMarker) {
@@ -60,12 +47,15 @@ function dropPinAt(lat, lng) {
   } else {
     pickerMarker = L.marker(latLng).addTo(pickerMap);
   }
-  pickerMap.setView(latLng, 16);
   document.getElementById('hostelLat').value = lat.toFixed(6);
   document.getElementById('hostelLng').value = lng.toFixed(6);
   document.getElementById('coordsDisplay').textContent =
     'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
 }
+
+pickerMap.on('click', (e) => dropPinAt(e.latlng.lat, e.latlng.lng));
+
+const GPS_COORDINATE_PATTERN = /^\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
 
 document.getElementById('findLocationBtn').addEventListener('click', async () => {
   const query = document.getElementById('locationSearchInput').value.trim();
@@ -73,8 +63,6 @@ document.getElementById('findLocationBtn').addEventListener('click', async () =>
   if (!query) return;
   errorBox.style.display = 'none';
 
-  // Case 1: the owner pasted GPS coordinates directly — these are already
-  // exact, so drop the pin immediately instead of asking for another click.
   const gpsMatch = query.match(GPS_COORDINATE_PATTERN);
   if (gpsMatch) {
     const lat = Number(gpsMatch[1]);
@@ -85,13 +73,11 @@ document.getElementById('findLocationBtn').addEventListener('click', async () =>
       errorBox.style.display = 'block';
       return;
     }
+    pickerMap.setView([lat, lng], 16);
     dropPinAt(lat, lng);
     return;
   }
 
-  // Case 2: a place name / landmark / address — search for it and just
-  // move the map there, since a place name isn't precise enough to trust
-  // as the exact hostel location. The owner still clicks to drop the pin.
   try {
     const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gh&q=' + encodeURIComponent(query);
     const response = await fetch(url, { headers: { 'Accept-Language': 'en' } });
@@ -108,16 +94,16 @@ document.getElementById('findLocationBtn').addEventListener('click', async () =>
     document.getElementById('coordsDisplay').textContent =
       'Map moved to that area — click the hostel\'s exact spot to drop a pin.';
   } catch (err) {
-    errorBox.textContent = 'Could not search for that location right now. You can still click the map manually, or skip location for now.';
+    errorBox.textContent = 'Could not search for that location right now.';
     errorBox.style.display = 'block';
   }
 });
 
-// ---------- Dynamic room type rows ----------
+// ---------- Room rows ----------
 const roomRowsContainer = document.getElementById('roomRows');
 let roomRowCount = 0;
 
-function addRoomRow() {
+function addRoomRow(existingRoom) {
   roomRowCount++;
   const rowId = 'room-row-' + roomRowCount;
   const row = document.createElement('div');
@@ -135,10 +121,19 @@ function addRoomRow() {
     '<input type="number" class="room-deposit-input" placeholder="Deposit GH₵ (optional)" title="Leave blank to default to 10% of the yearly price" style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:170px;" />' +
     '<button type="button" class="btn btn-outline" onclick="document.getElementById(\'' + rowId + '\').remove()">Remove</button>';
   roomRowsContainer.appendChild(row);
+
+  if (existingRoom) {
+    row.querySelector('.room-type-input').value = existingRoom.room_type;
+    row.querySelector('.room-price-input').value = existingRoom.price_per_year;
+    row.querySelector('.room-units-input').value = existingRoom.total_units;
+    row.querySelector('.room-available-input').value = existingRoom.available_units;
+    if (existingRoom.deposit_amount != null) {
+      row.querySelector('.room-deposit-input').value = existingRoom.deposit_amount;
+    }
+  }
 }
 
-document.getElementById('addRoomRowBtn').addEventListener('click', addRoomRow);
-addRoomRow(); // start with one row so the form isn't empty
+document.getElementById('addRoomRowBtn').addEventListener('click', () => addRoomRow());
 
 function collectRooms() {
   return Array.from(roomRowsContainer.children).map(function (row) {
@@ -154,8 +149,74 @@ function collectRooms() {
   }).filter(function (r) { return r.roomType && r.pricePerYear; });
 }
 
+// ---------- Load existing hostel and pre-fill everything ----------
+async function loadExistingHostel() {
+  try {
+    const h = await apiRequest('/api/hostels/' + hostelId, { auth: true });
+
+    const loadingNote = document.getElementById('loadingNote');
+    if (loadingNote) loadingNote.style.display = 'none';
+
+    // Ownership check happens here, BEFORE the form renders — the backend
+    // still enforces this independently on save (never trust the frontend
+    // alone), but this avoids the abrupt experience of filling out a form
+    // only to get blocked at the very end.
+    if (user && h.owner_id !== user.id && user.role !== 'admin') {
+      document.body.innerHTML =
+        '<div class="section"><p class="empty-state">You don\'t own this hostel, so you can\'t edit it. ' +
+        '<a href="dashboard.html">Back to dashboard</a></p></div>';
+      return;
+    }
+
+    document.getElementById('hostelName').value = h.name || '';
+    document.getElementById('hostelCity').value = h.city || '';
+    document.getElementById('hostelAddress').value = h.address || '';
+    document.getElementById('hostelDescription').value = h.description || '';
+    document.getElementById('hostelBusStop').value = h.nearby_bus_stop || '';
+
+    document.getElementById('amCctv').checked = h.has_cctv;
+    document.getElementById('amSecurity').checked = h.has_security_guard;
+    document.getElementById('amShuttle').checked = h.has_shuttle;
+    document.getElementById('amWater').checked = h.has_water_supply;
+    document.getElementById('amElectricity').checked = h.has_electricity_backup;
+    document.getElementById('amWifi').checked = h.has_wifi;
+    document.getElementById('amParking').checked = h.has_parking;
+
+    // Region needs the region list to already be loaded so we can find the matching option
+    if (!regionsLoaded) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    if (h.region_name && regionsLoaded) {
+      const match = regionsLoaded.find(r => r.name === h.region_name);
+      if (match) {
+        document.getElementById('hostelRegion').value = match.name;
+        document.getElementById('hostelRegionValue').value = String(match.id);
+      }
+    }
+
+    if (h.latitude && h.longitude) {
+      pickerMap.setView([Number(h.latitude), Number(h.longitude)], 15);
+      dropPinAt(Number(h.latitude), Number(h.longitude));
+    } else {
+      document.getElementById('coordsDisplay').textContent = 'No location set yet — search or click the map to add one.';
+    }
+
+    if (h.rooms && h.rooms.length) {
+      h.rooms.forEach(r => addRoomRow(r));
+    } else {
+      addRoomRow();
+    }
+  } catch (err) {
+    const loadingNote = document.getElementById('loadingNote');
+    if (loadingNote) loadingNote.style.display = 'none';
+    document.getElementById('errorMsg').textContent = 'Could not load this hostel: ' + err.message;
+    document.getElementById('errorMsg').style.display = 'block';
+  }
+}
+loadExistingHostel();
+
 // ---------- Submit ----------
-document.getElementById('addHostelForm').addEventListener('submit', async function (e) {
+document.getElementById('editHostelForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   var errorBox = document.getElementById('errorMsg');
   var successBox = document.getElementById('successMsg');
@@ -163,8 +224,8 @@ document.getElementById('addHostelForm').addEventListener('submit', async functi
   successBox.style.display = 'none';
 
   try {
-    var data = await apiRequest('/api/hostels', {
-      method: 'POST',
+    await apiRequest('/api/hostels/' + hostelId, {
+      method: 'PUT',
       auth: true,
       body: {
         name: document.getElementById('hostelName').value,
@@ -186,11 +247,11 @@ document.getElementById('addHostelForm').addEventListener('submit', async functi
       },
     });
 
-    successBox.textContent = 'Hostel saved! Redirecting to your new listing...';
+    successBox.textContent = 'Changes saved! Redirecting...';
     successBox.style.display = 'block';
     setTimeout(function () {
-      window.location.href = 'hostel.html?id=' + data.id;
-    }, 1200);
+      window.location.href = 'hostel.html?id=' + hostelId;
+    }, 1000);
   } catch (err) {
     errorBox.textContent = err.message;
     errorBox.style.display = 'block';
