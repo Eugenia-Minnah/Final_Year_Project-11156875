@@ -1,9 +1,8 @@
 // Language: JavaScript (runs in the browser)
-// Loads hostels from the API and renders them as cards, with a results
-// header showing current selection, optional sort, optional filters, and
-// a map showing the selected campus distinctly from hostel pins.
-// Region/University/Campus are now type-to-search dropdowns (see
-// searchable-select.js) instead of long native <select> lists.
+// Powers the full "Explore all hostels" page — the complete, unrestricted
+// database, with search/sort/filter/map. This is deliberately separate
+// from the landing page's small "Featured Hostels" preview: this page
+// never caps the number of results.
 
 let selectedCampusId = '';
 let selectedCampusName = '';
@@ -58,6 +57,7 @@ function buildQueryParams(filters) {
   if (filters.maxDistanceKm) params.set('maxDistanceKm', filters.maxDistanceKm);
   if (filters.features && filters.features.length) params.set('features', filters.features.join(','));
   if (filters.sort) params.set('sort', filters.sort);
+  // Deliberately NEVER sets featured or limit — this page shows the full database.
   return params;
 }
 
@@ -66,7 +66,7 @@ async function loadHostels(filters = {}) {
   grid.innerHTML = '<p class="empty-state">Loading hostels…</p>';
 
   selectedCampusId = filters.campusId || '';
-  selectedCampusName = campusControl.getLabel() || '';
+  selectedCampusName = document.getElementById('campusInput').value || '';
 
   const params = buildQueryParams(filters);
 
@@ -104,7 +104,6 @@ function currentFilters() {
 
 initHostelMap('hostelMap');
 
-// ---------- Set up the three searchable dropdowns ----------
 let locationController = {};
 
 const regionControl = createSearchableSelect({
@@ -145,4 +144,21 @@ if (filterToggle && filterPanel) {
 }
 document.getElementById('applyFiltersBtn')?.addEventListener('click', () => loadHostels(currentFilters()));
 
-loadHostels();
+// If arriving from the landing page's hero search (or any link) with a
+// region/university/campus already chosen, restore that selection and run
+// the search immediately — so the very first thing the student sees is
+// real, calculated distances, not an empty form to fill in again.
+(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialRegionId = urlParams.get('regionId');
+
+  if (initialRegionId) {
+    await locationController.restoreSelection({
+      regionId: initialRegionId,
+      universityId: urlParams.get('universityId'),
+      campusId: urlParams.get('campusId'),
+    });
+  }
+
+  loadHostels(currentFilters());
+})();

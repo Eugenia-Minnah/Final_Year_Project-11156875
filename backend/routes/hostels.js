@@ -8,10 +8,37 @@
 // use that distance to filter/sort/display results — not just region text.
 
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+// ---------- Photo upload configuration ----------
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: path.join(__dirname, '..', 'uploads', 'hostels'),
+    filename: (req, file, cb) => {
+      const uniqueName = crypto.randomUUID() + path.extname(file.originalname).toLowerCase();
+      cb(null, uniqueName);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max per photo
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPG, PNG, or WEBP images are allowed.'));
+  },
+});
+
+// A hostel this far or closer to the selected campus is treated as "nearby"
+// by default. This is NOT a hard restriction — it only applies when a
+// campus has been selected as a reference point, and "Explore all hostels"
+// (no campus selected) bypasses it entirely. An explicit maxDistanceKm
+// filter from the user always overrides this default.
+const DEFAULT_SEARCH_RADIUS_KM = 15;
 
 // ---------- Distance helper ----------
 function distanceInKm(lat1, lon1, lat2, lon2) {
@@ -67,12 +94,22 @@ const FEATURE_COLUMNS = {
 };
 
 // GET /api/hostels
+// Query params (all optional):
+//   regionId, universityId, campusId  — campusId is a DISTANCE REFERENCE
+//                                        POINT, never a hard filter. Plain
+//                                        regionId (no campus) is a genuine
+//                                        "browse this region" filter.
+//   roomType, minPrice, maxPrice, availability, features — normal filters
+//   maxDistanceKm — explicit override of the default 15km radius
+//   sort — recommended (default) | closest | farthest | price_low | price_high | rating | availability
+//   featured — "true" restricts to the small curated landing-page selection
+//   limit — caps the number of results (used by the landing page only)
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const {
       regionId, universityId, campusId,
       roomType, minPrice, maxPrice, availability, maxDistanceKm,
-      features, sort,
+      features, sort, featured, limit,
     } = req.query;
 
     const referenceCampus = await getCampusById(campusId);
@@ -94,12 +131,24 @@ router.get('/', optionalAuth, async (req, res) => {
     `;
     const values = [];
 
-    if (referenceCampus) {
-      values.push(referenceCampus.region_name);
-      query += ` AND r.name = $${values.length}`;
-    } else if (regionId) {
+    // FIX: when a campus is selected, we deliberately do NOT filter by
+    // region here — a hostel's relevance to a campus is decided purely by
+    // real distance (calculated below), never by whether its region label
+    // happens to match the campus's region. This is what lets one physical
+    // hostel correctly appear in searches from multiple different
+    // universities/campuses, each with its own recalculated distance.
+    // (Previously this filtered by "AND r.name = campus's region", which
+    // incorrectly hid hostels close to a campus but labeled a different region.)
+    //
+    // A plain regionId filter (no campus selected) is a different, genuine
+    // "browse this region" action, so that one still filters directly.
+    if (!referenceCampus && regionId) {
       values.push(regionId);
       query += ` AND h.region_id = $${values.length}`;
+    }
+
+    if (featured === 'true') {
+      query += ' AND h.featured = TRUE';
     }
 
     if (roomType) {
@@ -131,8 +180,13 @@ router.get('/', optionalAuth, async (req, res) => {
     const result = await pool.query(query, values);
     let hostels = attachDistances(result.rows, referenceCampus);
 
-    if (referenceCampus && maxDistanceKm) {
-      hostels = hostels.filter(h => h.distance_km !== undefined && h.distance_km <= Number(maxDistanceKm));
+    // Radius applies ONLY when a campus was actually selected as a
+    // reference point — this is personalization/ranking, not restriction.
+    // With no campus selected, every hostel matching the other filters is
+    // returned unrestricted ("Explore all hostels").
+    if (referenceCampus) {
+      const radius = maxDistanceKm ? Number(maxDistanceKm) : DEFAULT_SEARCH_RADIUS_KM;
+      hostels = hostels.filter(h => h.distance_km === undefined || h.distance_km <= radius);
     }
 
     const sortKey = sort || 'recommended';
@@ -160,6 +214,13 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     });
 
+    // Applied last, after sorting — so a limited landing-page request still
+    // gets the BEST N results (verified + closest first), not an arbitrary
+    // first N before ranking.
+    if (limit) {
+      hostels = hostels.slice(0, Number(limit));
+    }
+
     res.json({
       hostels,
       searchContext: referenceCampus
@@ -169,6 +230,7 @@ router.get('/', optionalAuth, async (req, res) => {
             campusName: referenceCampus.name,
             latitude: referenceCampus.latitude,
             longitude: referenceCampus.longitude,
+            searchRadiusKm: maxDistanceKm ? Number(maxDistanceKm) : DEFAULT_SEARCH_RADIUS_KM,
           }
         : null,
     });
@@ -184,7 +246,7 @@ router.get('/', optionalAuth, async (req, res) => {
 router.get('/mine', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT h.id, h.name, h.city, r.name AS region_name, h.is_verified,
+      `SELECT h.id, h.name, h.city, r.name AS region_name, h.is_verified, h.latitude,
               MIN(rm.price_per_year) AS from_price
        FROM hostels h
        LEFT JOIN regions r ON r.id = h.region_id
@@ -274,6 +336,17 @@ router.post('/', requireAuth, requireRole('owner', 'admin'), async (req, res) =>
       return res.status(400).json({ error: 'Hostel name and region are required.' });
     }
 
+    // NOTE: geocoding (converting an address into coordinates) happens in
+    // the BROWSER before this request is sent, not on the server. OpenStreetMap's
+    // free Nominatim service explicitly blocks automated server-to-server
+    // calls (see backend/utils/geocode.js for the full explanation) — only
+    // light, human-triggered browser requests are allowed. The frontend's
+    // "Find" location search already geocodes client-side, so by the time
+    // a create/edit request reaches here, latitude/longitude are either
+    // already set or the owner chose to leave them blank.
+    const finalLatitude = latitude || null;
+    const finalLongitude = longitude || null;
+
     await client.query('BEGIN');
 
     const hostelResult = await client.query(
@@ -285,7 +358,7 @@ router.post('/', requireAuth, requireRole('owner', 'admin'), async (req, res) =>
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING *`,
       [
-        req.user.id, name, regionId, city, address, description, latitude || null, longitude || null,
+        req.user.id, name, regionId, city, address, description, finalLatitude, finalLongitude,
         !!hasCctv, !!hasSecurityGuard, !!hasShuttle, hasWaterSupply !== false,
         !!hasElectricityBackup, !!hasWifi, !!hasParking, nearbyBusStop,
       ]
@@ -349,6 +422,11 @@ router.put('/:id', requireAuth, requireRole('owner', 'admin'), async (req, res) 
       return res.status(400).json({ error: 'Hostel name and region are required.' });
     }
 
+    // Geocoding happens client-side before this request arrives — see the
+    // note in the POST route above.
+    const finalLatitude = latitude || null;
+    const finalLongitude = longitude || null;
+
     await client.query('BEGIN');
 
     const hostelResult = await client.query(
@@ -360,7 +438,7 @@ router.put('/:id', requireAuth, requireRole('owner', 'admin'), async (req, res) 
        WHERE id = $16
        RETURNING *`,
       [
-        name, regionId, city, address, description, latitude || null, longitude || null,
+        name, regionId, city, address, description, finalLatitude, finalLongitude,
         !!hasCctv, !!hasSecurityGuard, !!hasShuttle, hasWaterSupply !== false,
         !!hasElectricityBackup, !!hasWifi, !!hasParking, nearbyBusStop, id,
       ]
@@ -431,7 +509,7 @@ router.post('/:id/reviews', requireAuth, requireRole('student'), async (req, res
 router.get('/admin/pending', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT h.id, h.name, h.city, h.created_at, r.name AS region_name, u.full_name AS owner_name
+      `SELECT h.id, h.name, h.city, h.created_at, r.name AS region_name, u.full_name AS owner_name, h.latitude
        FROM hostels h
        LEFT JOIN regions r ON r.id = h.region_id
        JOIN users u ON u.id = h.owner_id
@@ -477,6 +555,85 @@ router.delete('/:id', requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not remove hostel.' });
+  }
+});
+
+// PATCH /api/hostels/:id/coordinates — owner (of that hostel) or admin only.
+// Saves latitude/longitude that the BROWSER already geocoded (via the
+// "Auto-locate" button, which calls OpenStreetMap directly from the
+// frontend — the same pattern as the "Find" location search). The server
+// does not call Nominatim itself: their usage policy blocks automated
+// server-to-server geocoding, only allowing light, human-triggered
+// browser requests. See backend/utils/geocode.js for the full explanation.
+router.patch('/:id/coordinates', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { latitude, longitude } = req.body;
+
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'latitude and longitude are both required.' });
+    }
+
+    const hostelResult = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
+    if (hostelResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found.' });
+    }
+    if (hostelResult.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'You do not have permission to update this hostel.' });
+    }
+
+    const updateResult = await pool.query(
+      'UPDATE hostels SET latitude = $1, longitude = $2 WHERE id = $3 RETURNING id, name, latitude, longitude',
+      [latitude, longitude, id]
+    );
+
+    res.json(updateResult.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not save coordinates for this hostel.' });
+  }
+});
+
+// Wraps multer's upload so file-too-large / wrong-type errors come back
+// as clean JSON instead of an unhandled crash.
+function handleUpload(req, res, next) {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Could not process the uploaded image.' });
+    }
+    next();
+  });
+}
+
+// POST /api/hostels/:id/image — owner (of that hostel) or admin only.
+// Uploads a cover photo, replacing whatever was there before.
+router.post('/:id/image', requireAuth, handleUpload, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file was uploaded.' });
+    }
+
+    const hostelResult = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
+    if (hostelResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found.' });
+    }
+    if (hostelResult.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'You do not have permission to update this hostel.' });
+    }
+
+    const imageUrl = '/uploads/hostels/' + req.file.filename;
+
+    const updateResult = await pool.query(
+      'UPDATE hostels SET cover_image_url = $1 WHERE id = $2 RETURNING id, name, cover_image_url',
+      [imageUrl, id]
+    );
+
+    res.json(updateResult.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not upload image.' });
   }
 });
 

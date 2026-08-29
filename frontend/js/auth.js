@@ -14,8 +14,16 @@ function saveSession(data) {
 }
 
 // ----- Sign in -----
+// Works for the generic signin.html AND the role-specific login pages
+// (student-login.html, owner-login.html, admin-login.html). If the form
+// has a data-expected-role attribute, a login that returns a DIFFERENT
+// role is rejected with a clear message instead of silently redirecting —
+// e.g. an owner trying to sign in on the Student Login page gets told to
+// use Owner Login instead.
 const signinForm = document.getElementById('signinForm');
 if (signinForm) {
+  const expectedRole = signinForm.getAttribute('data-expected-role');
+
   signinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -26,8 +34,15 @@ if (signinForm) {
           password: document.getElementById('password').value,
         },
       });
+
+      if (expectedRole && data.user.role !== expectedRole) {
+        const roleLabel = { student: 'Student', owner: 'Hostel Owner', admin: 'Admin' }[data.user.role] || data.user.role;
+        showError(`This account is registered as a ${roleLabel}. Please use the ${roleLabel} login page instead.`);
+        return;
+      }
+
       saveSession(data);
-      window.location.href = 'dashboard.html'; // <-- this is the "web app"
+      redirectToRoleDashboard(data.user.role);
     } catch (err) {
       showError(err.message);
     }
@@ -95,7 +110,7 @@ if (signupForm) {
         },
       });
       saveSession(data);
-      window.location.href = 'dashboard.html'; // straight into the web app after signup
+      redirectToRoleDashboard(data.user.role); // straight into the correct dashboard for this role
     } catch (err) {
       showError(err.message);
     }

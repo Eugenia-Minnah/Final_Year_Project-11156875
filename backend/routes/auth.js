@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { sendPasswordResetEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -98,17 +99,81 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me  (protected — used by the dashboard to confirm who's logged in)
 router.get('/me', requireAuth, async (req, res) => {
   const result = await pool.query(
-    'SELECT id, full_name, email, role, created_at FROM users WHERE id = $1',
+    `SELECT u.id, u.full_name, u.email, u.role, u.phone, u.created_at, u.home_campus_id,
+            c.name AS campus_name, uni.name AS university_name, r.name AS region_name
+     FROM users u
+     LEFT JOIN campuses c ON c.id = u.home_campus_id
+     LEFT JOIN universities uni ON uni.id = c.university_id
+     LEFT JOIN regions r ON r.id = c.region_id
+     WHERE u.id = $1`,
     [req.user.id]
   );
   res.json(result.rows[0]);
 });
 
+// PUT /api/auth/me — self-service profile edit. Email is intentionally
+// NOT editable here (changing it would need re-verification, which is
+// out of scope) — only name, phone, and (for students) home campus.
+router.put('/me', requireAuth, async (req, res) => {
+  try {
+    const { fullName, phone, homeCampusId } = req.body;
+
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ error: 'Full name is required.' });
+    }
+
+    // Only students have a home campus — ignore the field entirely for
+    // owners/admins, same rule as at signup.
+    const campusToSave = req.user.role === 'student' && homeCampusId ? homeCampusId : null;
+
+    const result = await pool.query(
+      `UPDATE users SET full_name = $1, phone = $2, home_campus_id = $3
+       WHERE id = $4
+       RETURNING id, full_name, email, role, phone, home_campus_id`,
+      [fullName.trim(), phone || null, campusToSave, req.user.id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update your profile.' });
+  }
+});
+
+// PUT /api/auth/change-password — requires knowing the CURRENT password
+// (different from the forgot-password flow, which is for when you don't).
+router.put('/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are both required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    const matches = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+    if (!matches) {
+      return res.status(401).json({ error: 'Your current password is incorrect.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, req.user.id]);
+
+    res.json({ message: 'Password updated.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change your password.' });
+  }
+});
+
 // POST /api/auth/forgot-password
-// Requests a reset link. For now, the link is printed to the SERVER'S terminal
-// instead of emailed, since sending real email needs a mail service (e.g. Gmail
-// SMTP, SendGrid, Resend) with its own account/credentials — see the note in
-// the README for how to wire that in later.
+// Requests a reset link. Sends a real email via Gmail SMTP if EMAIL_USER/
+// EMAIL_APP_PASSWORD are set in .env — otherwise falls back to printing
+// the link to this terminal, exactly like before, so reset still works
+// during local development without needing email configured.
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -136,8 +201,18 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     const resetLink = `http://localhost:${process.env.PORT || 5000}/reset-password.html?token=${token}`;
-    console.log('\nPassword reset requested for', email);
-    console.log('Reset link (would normally be emailed):', resetLink, '\n');
+
+    let emailSent = false;
+    try {
+      emailSent = await sendPasswordResetEmail(email, resetLink);
+    } catch (emailErr) {
+      console.error('Failed to send reset email:', emailErr.message);
+    }
+
+    if (!emailSent) {
+      console.log('\nPassword reset requested for', email);
+      console.log('Email not sent (not configured, or sending failed) — reset link:', resetLink, '\n');
+    }
 
     res.json({ message: genericMessage });
   } catch (err) {

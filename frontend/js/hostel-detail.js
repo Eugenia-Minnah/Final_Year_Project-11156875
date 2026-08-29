@@ -106,7 +106,10 @@ async function loadHostelDetail() {
 
     container.innerHTML = `
       <a class="back-link" onclick="history.back()">← Back to results</a>
-      <h2 style="margin-top:12px;">${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h2>
+      ${h.cover_image_url
+        ? `<img src="${h.cover_image_url}" style="width:100%; max-height:340px; object-fit:cover; border-radius:14px; margin-top:12px;" />`
+        : `<div class="thumb" style="height:200px; border-radius:14px; margin-top:12px;"></div>`}
+      <h2 style="margin-top:16px;">${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h2>
       <p style="color:var(--green); font-weight:600;">${locationLine}</p>
       ${distanceBlock}
       <p>${h.address || ''}</p>

@@ -18,25 +18,26 @@
     </div>
     <a class="back-link" onclick="history.back()">← Back</a>
     <div class="nav-links">
-      <a href="#hostels">Hostels</a>
+      <a href="explore.html">Hostels</a>
       <a href="#regions">Regions</a>
       <a href="#how">How it works</a>
-      <a href="signup.html?role=owner">For owners</a>
+      <a href="owner-login.html">Hostel Owners</a>
     </div>
     <div class="nav-actions">
-      <!-- This is the Sign in button: it takes visitors to signin.html,
-           and after a successful login they land in the web app (dashboard.html) -->
-      <a href="signin.html" class="btn btn-outline">Sign in</a>
+      <!-- Sign in is STUDENT-ONLY — hostel owners have their own separate
+           entry point (owner-login.html) and never land here. -->
+      <a href="student-login.html" class="btn btn-outline">Sign in</a>
       <a href="signup.html" class="btn btn-primary">Get started</a>
+      <a href="owner-login.html" class="btn btn-outline" style="border-color: var(--navy);">List Your Hostel</a>
     </div>
   </nav>
 
   <header class="hero">
     <span class="pill">Verified listings · Real availability</span>
     <h1>Find a verified hostel near your campus</h1>
-    <p>Browse accurate, up-to-date hostel listings across Ghana — prices, room types, security features and transport access, all in one place.</p>
+    <p>Select your region, university, and campus to see hostels ranked by real, calculated distance — not just a generic list.</p>
 
-    <form class="search-bar" id="searchForm">
+    <form class="search-bar" id="heroSearchForm">
       <div class="searchable-select">
         <input type="text" id="regionInput" placeholder="Type or select a region" autocomplete="off" />
         <input type="hidden" id="regionInputValue" />
@@ -52,76 +53,28 @@
         <input type="hidden" id="campusInputValue" />
         <div class="searchable-dropdown" id="campusInputDropdown"></div>
       </div>
-      <select id="roomTypeInput">
-        <option value="">Any room type</option>
-        <option value="1 in a room">1 in a room</option>
-        <option value="2 in a room">2 in a room</option>
-        <option value="4 in a room">4 in a room</option>
-      </select>
-      <button type="submit" class="btn btn-primary">Search</button>
+      <button type="submit" class="btn btn-primary">See hostels near my campus</button>
     </form>
+
+    <p style="margin-top: 14px; font-size: 14px;">
+      <a href="explore.html" style="color: white; text-decoration: underline;">Or browse every hostel without picking a campus →</a>
+    </p>
   </header>
 
   <section class="section" id="hostels">
-    <div id="resultsHeader"></div>
-
-    <div class="results-controls" style="margin-bottom:16px;">
-      <button type="button" class="btn btn-outline" id="filterToggle">Filter</button>
-      <select id="sortInput">
-        <option value="recommended">Sort: Recommended</option>
-        <option value="closest">Sort: Closest</option>
-        <option value="farthest">Sort: Farthest</option>
-        <option value="price_low">Sort: Lowest price</option>
-        <option value="price_high">Sort: Highest price</option>
-        <option value="rating">Sort: Highest rated</option>
-        <option value="availability">Sort: Most available</option>
-      </select>
+    <h2>Featured hostels</h2>
+    <div class="hostel-grid" id="featuredGrid">
+      <p class="empty-state">Loading featured hostels…</p>
     </div>
-
-    <div id="filterPanel" style="display:none; background:white; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
-      <div class="filters">
-        <input type="number" id="minPriceInput" placeholder="Min price (GH₵)" />
-        <input type="number" id="maxPriceInput" placeholder="Max price (GH₵)" />
-        <select id="availabilityInput">
-          <option value="">Any availability</option>
-          <option value="available">Available</option>
-          <option value="limited">Limited availability</option>
-          <option value="full">Fully occupied</option>
-        </select>
-        <select id="maxDistanceInput">
-          <option value="">Any distance</option>
-          <option value="1">Within 1 km</option>
-          <option value="3">Within 3 km</option>
-          <option value="5">Within 5 km</option>
-          <option value="10">Within 10 km</option>
-        </select>
-      </div>
-      <div style="margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; font-size:14px;">
-        <label><input type="checkbox" class="feature-checkbox" value="security"> Security</label>
-        <label><input type="checkbox" class="feature-checkbox" value="cctv"> CCTV</label>
-        <label><input type="checkbox" class="feature-checkbox" value="wifi"> Wi-Fi</label>
-        <label><input type="checkbox" class="feature-checkbox" value="parking"> Parking</label>
-        <label><input type="checkbox" class="feature-checkbox" value="water"> Water supply</label>
-        <label><input type="checkbox" class="feature-checkbox" value="electricity"> Electricity backup</label>
-        <label><input type="checkbox" class="feature-checkbox" value="shuttle"> Shuttle</label>
-      </div>
-      <button type="button" class="btn btn-primary" id="applyFiltersBtn" style="margin-top:14px;">Apply filters</button>
+    <div style="text-align:center; margin-top:24px;">
+      <a href="explore.html" class="btn btn-outline">Explore All Hostels</a>
     </div>
-
-    <div class="hostel-grid" id="hostelGrid">
-      <p class="empty-state">Loading hostels…</p>
-    </div>
-  </section>
-
-  <section class="section" id="map-section">
-    <h2>Hostel locations</h2>
-    <div id="hostelMap" style="height: 420px; border-radius: 14px; border: 1px solid var(--border);"></div>
   </section>
 
   <script src="js/api.js"></script>
   <script src="js/searchable-select.js"></script>
   <script src="js/locations.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/landing.js"></script>
+  <script src="js/featured.js"></script>
+  <script src="js/hero-search.js"></script>
 </body>
 </html>

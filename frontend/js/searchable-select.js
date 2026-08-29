@@ -87,5 +87,13 @@ function createSearchableSelect({ inputEl, hiddenEl, dropdownEl, onChange }) {
     getLabel() {
       return inputEl.value;
     },
+    // Programmatically select an option by id, without the user clicking
+    // it — used to pre-fill a dropdown from a known id + label (e.g. when
+    // arriving from a link that already specifies a selection).
+    selectById(id, label) {
+      hiddenEl.value = id;
+      inputEl.value = label;
+      hideDropdown();
+    },
   };
 }

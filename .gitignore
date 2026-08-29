@@ -1,8 +1,11 @@
 # Environment variables (contains real passwords/secrets — never commit this)
-.env
+backend/.env
 
 # Node dependencies (reinstalled via npm install, no need to store in git)
-node_modules/
+backend/node_modules/
+
+# Uploaded hostel photos (user-generated content, not source code)
+backend/uploads/
 
 # OS-generated files
 .DS_Store

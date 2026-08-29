@@ -1,10 +1,13 @@
 -- =========================================================
 -- Smart Hostel Finder — Patch: add campus coordinates
 -- Language: SQL (PostgreSQL)
+-- Fixes the "column latitude of relation campuses does not exist" error
+-- by adding the columns first (safe to re-run — IF NOT EXISTS), then
+-- setting coordinates for every known campus.
 -- =========================================================
 
-ALTER TABLE campuses ADD COLUMN latitude  NUMERIC(9,6);
-ALTER TABLE campuses ADD COLUMN longitude NUMERIC(9,6);
+ALTER TABLE campuses ADD COLUMN IF NOT EXISTS latitude  NUMERIC(9,6);
+ALTER TABLE campuses ADD COLUMN IF NOT EXISTS longitude NUMERIC(9,6);
 
 UPDATE campuses SET latitude = 5.6494, longitude = -0.1870 WHERE name = 'Legon Campus';
 UPDATE campuses SET latitude = 6.6745, longitude = -1.5716 WHERE name = 'Kumasi Campus';
@@ -33,6 +36,7 @@ UPDATE campuses SET latitude = 6.0865, longitude = -0.0765 WHERE name = 'Akropon
 UPDATE campuses SET latitude = 5.6156, longitude = -0.2298 WHERE name = 'Achimota Campus';
 UPDATE campuses SET latitude = 6.6667, longitude = -0.7500 WHERE name = 'Abetifi Campus';
 
+-- Verify: every campus that has a region should now also have coordinates
 SELECT c.name, r.name AS region, c.latitude, c.longitude
 FROM campuses c
 LEFT JOIN regions r ON r.id = c.region_id

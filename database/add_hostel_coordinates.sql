@@ -1,7 +1,6 @@
 -- =========================================================
 -- Smart Hostel Finder — Add map coordinates to hostels
 -- Language: SQL (PostgreSQL)
--- Run this AFTER migrate_hostels_to_campus.sql
 -- =========================================================
 
 ALTER TABLE hostels ADD COLUMN latitude  NUMERIC(9,6);

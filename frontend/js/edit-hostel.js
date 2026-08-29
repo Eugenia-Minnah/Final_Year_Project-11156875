@@ -182,6 +182,11 @@ async function loadExistingHostel() {
     document.getElementById('amWifi').checked = h.has_wifi;
     document.getElementById('amParking').checked = h.has_parking;
 
+    if (h.cover_image_url) {
+      document.getElementById('currentCoverPhotoImg').src = h.cover_image_url;
+      document.getElementById('currentCoverPhoto').style.display = 'block';
+    }
+
     // Region needs the region list to already be loaded so we can find the matching option
     if (!regionsLoaded) {
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -215,6 +220,23 @@ async function loadExistingHostel() {
 }
 loadExistingHostel();
 
+// ---------- Cover photo preview (purely visual, upload happens on save) ----------
+document.getElementById('coverPhotoInput').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  var preview = document.getElementById('coverPhotoPreview');
+  var previewImg = document.getElementById('coverPhotoPreviewImg');
+  if (!file) {
+    preview.style.display = 'none';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (event) {
+    previewImg.src = event.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
 // ---------- Submit ----------
 document.getElementById('editHostelForm').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -246,6 +268,17 @@ document.getElementById('editHostelForm').addEventListener('submit', async funct
         rooms: collectRooms(),
       },
     });
+
+    // The hostel's other changes are saved regardless of what happens with
+    // the photo — a failed upload should never lose the rest of the edit.
+    var photoFile = document.getElementById('coverPhotoInput').files[0];
+    if (photoFile) {
+      try {
+        await apiUpload('/api/hostels/' + hostelId + '/image', photoFile);
+      } catch (photoErr) {
+        console.error('Photo upload failed:', photoErr.message);
+      }
+    }
 
     successBox.textContent = 'Changes saved! Redirecting...';
     successBox.style.display = 'block';

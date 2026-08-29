@@ -121,7 +121,7 @@ function renderHostelCards(hostels, container) {
 
   container.innerHTML = hostels.map(h => `
     <a href="hostel.html?id=${h.id}${selectedCampusId ? '&campusId=' + selectedCampusId : ''}" class="hostel-card" style="display:block;">
-      <div class="thumb"></div>
+      <div class="thumb" ${h.cover_image_url ? `style="background-image:url('${h.cover_image_url}'); background-size:cover; background-position:center;"` : ''}></div>
       <div class="body">
         <h3>${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h3>
         <div class="region">${h.city ? `${h.city}, ` : ''}${h.region_name || ''}</div>

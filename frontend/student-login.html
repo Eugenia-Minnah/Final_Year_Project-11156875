@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in — Smart Hostel Finder</title>
+  <title>Student Sign In — Smart Hostel Finder</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -19,12 +19,12 @@
 
   <div class="auth-wrapper">
     <div class="auth-card">
-      <h1>Welcome back</h1>
-      <p class="sub">Sign in to book hostels, message owners, and manage your listings.</p>
+      <h1>Student Sign In</h1>
+      <p class="sub">Sign in to book hostels, save favourites, and manage your bookings.</p>
 
       <div class="error-msg" id="errorMsg"></div>
 
-      <form id="signinForm">
+      <form id="signinForm" data-expected-role="student">
         <div class="field">
           <label for="email">Email</label>
           <input type="email" id="email" required placeholder="you@example.com" />
@@ -40,6 +40,7 @@
       </form>
 
       <p class="auth-switch">Don't have an account? <a href="signup.html">Create one</a></p>
+      <p class="auth-switch" style="margin-top:6px;">Are you a hostel owner? <a href="owner-login.html">Owner Login</a></p>
     </div>
   </div>
 

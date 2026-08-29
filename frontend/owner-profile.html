@@ -1,0 +1,63 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="owner-dashboard.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+    <a class="back-link" onclick="history.back()">← Back</a>
+  </nav>
+
+  <section class="section" style="max-width: 640px;">
+    <h2>My Profile</h2>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="error-msg" id="successMsg" style="background:#E4F3EF; color:var(--green-dark);"></div>
+
+    <form id="profileForm" class="auth-card" style="max-width: 100%; margin-bottom: 24px;">
+      <div class="field">
+        <label for="fullName">Full name</label>
+        <input type="text" id="fullName" required />
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" disabled style="background:var(--bg); color:var(--text-muted);" />
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Email can't be changed here.</p>
+      </div>
+      <div class="field">
+        <label for="phone">Phone (optional)</label>
+        <input type="text" id="phone" placeholder="e.g. 024 123 4567" />
+      </div>
+      <button type="submit" class="btn btn-primary full-width" style="margin-top:12px;">Save changes</button>
+    </form>
+
+    <div class="auth-card" style="max-width: 100%;">
+      <h3 style="margin-top:0;">Change password</h3>
+      <form id="passwordForm">
+        <div class="field">
+          <label for="currentPassword">Current password</label>
+          <input type="password" id="currentPassword" required />
+        </div>
+        <div class="field">
+          <label for="newPassword">New password</label>
+          <input type="password" id="newPassword" required minlength="6" placeholder="At least 6 characters" />
+        </div>
+        <button type="submit" class="btn btn-outline full-width">Update password</button>
+      </form>
+    </div>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/role-redirect.js"></script>
+  <script src="js/owner-profile.js"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in — Smart Hostel Finder</title>
+  <title>Admin Login — Smart Hostel Finder</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -12,19 +12,19 @@
   <nav class="navbar">
     <a href="index.html" class="logo">
       <span class="badge">S</span>
-      SmartHostel
+      SmartHostel <span style="font-weight:400; font-size:13px; color:var(--text-muted);">— Admin</span>
     </a>
     <a class="back-link" onclick="history.back()">← Back</a>
   </nav>
 
   <div class="auth-wrapper">
     <div class="auth-card">
-      <h1>Welcome back</h1>
-      <p class="sub">Sign in to book hostels, message owners, and manage your listings.</p>
+      <h1>Admin Login</h1>
+      <p class="sub">For platform administrators only.</p>
 
       <div class="error-msg" id="errorMsg"></div>
 
-      <form id="signinForm">
+      <form id="signinForm" data-expected-role="admin">
         <div class="field">
           <label for="email">Email</label>
           <input type="email" id="email" required placeholder="you@example.com" />
@@ -32,14 +32,9 @@
         <div class="field">
           <label for="password">Password</label>
           <input type="password" id="password" required placeholder="••••••••" />
-          <div style="text-align: right; margin-top: 6px;">
-            <a href="forgot-password.html" style="font-size: 13px; color: var(--green); font-weight: 600;">Forgot password?</a>
-          </div>
         </div>
         <button type="submit" class="btn btn-primary full-width">Sign in</button>
       </form>
-
-      <p class="auth-switch">Don't have an account? <a href="signup.html">Create one</a></p>
     </div>
   </div>
 

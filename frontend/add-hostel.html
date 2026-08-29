@@ -12,7 +12,7 @@
 <body>
 
   <nav class="navbar">
-    <a href="dashboard.html" class="logo">
+    <a href="owner-dashboard.html" class="logo">
       <span class="badge">S</span>
       SmartHostel
     </a>
@@ -86,6 +86,17 @@
           <label><input type="checkbox" id="amElectricity"> Electricity backup</label>
           <label><input type="checkbox" id="amWifi"> Wi-Fi</label>
           <label><input type="checkbox" id="amParking"> Parking</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Cover photo (optional)</label>
+        <p style="font-size:13px; color:var(--text-muted); margin:0 0 8px;">
+          You can add this now, or come back and add it later from "My Hostels" — it's not required to save the listing.
+        </p>
+        <input type="file" id="coverPhotoInput" accept="image/jpeg,image/png,image/webp" />
+        <div id="coverPhotoPreview" style="margin-top:10px; display:none;">
+          <img id="coverPhotoPreviewImg" style="max-width:220px; border-radius:8px; border:1px solid var(--border);" />
         </div>
       </div>
 

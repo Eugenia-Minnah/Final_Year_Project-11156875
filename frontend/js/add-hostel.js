@@ -155,6 +155,23 @@ function collectRooms() {
 }
 
 // ---------- Submit ----------
+// ---------- Cover photo preview (purely visual, upload happens on submit) ----------
+document.getElementById('coverPhotoInput').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  var preview = document.getElementById('coverPhotoPreview');
+  var previewImg = document.getElementById('coverPhotoPreviewImg');
+  if (!file) {
+    preview.style.display = 'none';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (event) {
+    previewImg.src = event.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
 document.getElementById('addHostelForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   var errorBox = document.getElementById('errorMsg');
@@ -185,6 +202,18 @@ document.getElementById('addHostelForm').addEventListener('submit', async functi
         rooms: collectRooms(),
       },
     });
+
+    // Hostel is saved at this point regardless of what happens next — the
+    // photo is a nice-to-have, never a reason to lose the listing itself.
+    var photoFile = document.getElementById('coverPhotoInput').files[0];
+    if (photoFile) {
+      try {
+        await apiUpload('/api/hostels/' + data.id + '/image', photoFile);
+      } catch (photoErr) {
+        // Don't block on a failed photo upload — the hostel already saved.
+        console.error('Photo upload failed:', photoErr.message);
+      }
+    }
 
     successBox.textContent = 'Hostel saved! Redirecting to your new listing...';
     successBox.style.display = 'block';
