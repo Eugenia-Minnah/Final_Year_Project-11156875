@@ -1,4 +1,4 @@
-# Smart Hostel Finder — Full Stack Starter
+# Smart Hostel Finder — Full Stack
 
 **Stack**
 - Database: PostgreSQL (SQL)
@@ -26,8 +26,3 @@ smart-hostel-finder/
     dashboard.html    -> the "web app" (only reachable after signing in)
     css/style.css
     js/api.js, landing.js, auth.js, dashboard.js
-```
-
-See the chat response for the full step-by-step setup walkthrough
-(install PostgreSQL → create the database → run schema.sql → configure
-.env → npm install → npm start → open localhost:5000).
