@@ -30,18 +30,40 @@ async function loadMyBookings() {
       return;
     }
     list.innerHTML = bookings.map(function (b) {
+      var paymentColor = b.payment_status === 'paid' ? 'var(--green)' : (b.payment_status === 'failed' ? '#B3261E' : 'var(--text-muted)');
       return '<div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">' +
         '<div>' +
         '<strong><a href="hostel.html?id=' + b.hostel_id + '">' + b.hostel_name + '</a></strong>' +
         '<div style="font-size:13px; color:var(--text-muted);">' +
         b.room_type + ' &middot; Deposit GH\u20B5' + Number(b.deposit_amount).toLocaleString() +
         ' &middot; Status: <span style="text-transform:capitalize; font-weight:600; color:' + (b.status === 'cancelled' ? 'var(--text-muted)' : 'var(--green)') + ';">' + b.status + '</span>' +
+        ' &middot; Payment: <span style="text-transform:capitalize; font-weight:600; color:' + paymentColor + ';">' + b.payment_status + '</span>' +
         '</div></div>' +
+        '<div style="display:flex; gap:8px;">' +
+        (b.status !== 'cancelled' && b.payment_status !== 'paid'
+          ? '<button type="button" class="btn btn-primary pay-now-btn" data-booking-id="' + b.id + '">Pay now</button>'
+          : '') +
         (b.status !== 'cancelled'
           ? '<button type="button" class="btn btn-outline cancel-booking-btn" data-booking-id="' + b.id + '">Cancel</button>'
           : '') +
+        '</div>' +
         '</div>';
     }).join('');
+
+    document.querySelectorAll('.pay-now-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        btn.textContent = 'Starting payment...';
+        btn.disabled = true;
+        try {
+          var payment = await apiRequest('/api/bookings/' + btn.getAttribute('data-booking-id') + '/pay', { method: 'POST', auth: true });
+          window.location.href = payment.authorizationUrl;
+        } catch (err) {
+          alert('Could not start payment: ' + err.message);
+          btn.textContent = 'Pay now';
+          btn.disabled = false;
+        }
+      });
+    });
 
     document.querySelectorAll('.cancel-booking-btn').forEach(function (btn) {
       btn.addEventListener('click', async function () {

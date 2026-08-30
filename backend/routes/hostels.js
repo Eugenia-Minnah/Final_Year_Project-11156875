@@ -109,7 +109,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const {
       regionId, universityId, campusId,
       roomType, minPrice, maxPrice, availability, maxDistanceKm,
-      features, sort, featured, limit,
+      features, sort, featured, limit, page, pageSize,
     } = req.query;
 
     const referenceCampus = await getCampusById(campusId);
@@ -221,8 +221,25 @@ router.get('/', optionalAuth, async (req, res) => {
       hostels = hostels.slice(0, Number(limit));
     }
 
+    // Pagination — kept entirely separate from `limit` (which the landing
+    // page's featured section uses and must keep working unchanged).
+    // Slicing the already-sorted array means page 2 still shows the next
+    // best results in the same order, not an arbitrary re-ordering.
+    let pagination = null;
+    if (page || pageSize) {
+      const totalCount = hostels.length;
+      const size = Math.max(1, Number(pageSize) || 12);
+      const totalPages = Math.max(1, Math.ceil(totalCount / size));
+      const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+      const start = (currentPage - 1) * size;
+
+      hostels = hostels.slice(start, start + size);
+      pagination = { page: currentPage, pageSize: size, totalCount, totalPages };
+    }
+
     res.json({
       hostels,
+      pagination,
       searchContext: referenceCampus
         ? {
             regionName: referenceCampus.region_name,

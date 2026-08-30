@@ -6,6 +6,8 @@
 
 let selectedCampusId = '';
 let selectedCampusName = '';
+let currentPage = 1;
+const PAGE_SIZE = 12;
 
 function renderResultsHeader(searchContext, hostelCount) {
   const box = document.getElementById('resultsHeader');
@@ -45,6 +47,31 @@ function renderHostelCards(hostels, container) {
   `).join('');
 }
 
+function renderPagination(pagination) {
+  const box = document.getElementById('paginationControls');
+  if (!pagination || pagination.totalPages <= 1) {
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = `
+    <button type="button" class="btn btn-outline" id="prevPageBtn" ${pagination.page <= 1 ? 'disabled' : ''}>← Previous</button>
+    <span style="font-size:14px; color:var(--text-muted);">Page ${pagination.page} of ${pagination.totalPages} &middot; ${pagination.totalCount} hostels</span>
+    <button type="button" class="btn btn-outline" id="nextPageBtn" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>Next →</button>
+  `;
+
+  document.getElementById('prevPageBtn')?.addEventListener('click', () => {
+    currentPage = Math.max(1, currentPage - 1);
+    loadHostels({ ...currentFilters(), page: currentPage });
+    window.scrollTo({ top: document.getElementById('hostelGrid').offsetTop - 20, behavior: 'smooth' });
+  });
+  document.getElementById('nextPageBtn')?.addEventListener('click', () => {
+    currentPage = currentPage + 1;
+    loadHostels({ ...currentFilters(), page: currentPage });
+    window.scrollTo({ top: document.getElementById('hostelGrid').offsetTop - 20, behavior: 'smooth' });
+  });
+}
+
 function buildQueryParams(filters) {
   const params = new URLSearchParams();
   if (filters.campusId) params.set('campusId', filters.campusId);
@@ -57,7 +84,9 @@ function buildQueryParams(filters) {
   if (filters.maxDistanceKm) params.set('maxDistanceKm', filters.maxDistanceKm);
   if (filters.features && filters.features.length) params.set('features', filters.features.join(','));
   if (filters.sort) params.set('sort', filters.sort);
-  // Deliberately NEVER sets featured or limit — this page shows the full database.
+  params.set('page', filters.page || 1);
+  params.set('pageSize', PAGE_SIZE);
+  // Deliberately never sets `featured` — this page shows the full database, paginated.
   return params;
 }
 
@@ -72,8 +101,9 @@ async function loadHostels(filters = {}) {
 
   try {
     const data = await apiRequest('/api/hostels?' + params.toString(), { auth: true });
-    renderResultsHeader(data.searchContext, data.hostels.length);
+    renderResultsHeader(data.searchContext, data.pagination ? data.pagination.totalCount : data.hostels.length);
     renderHostelCards(data.hostels, grid);
+    renderPagination(data.pagination);
     renderCampusMarker(data.searchContext ? {
       latitude: data.searchContext.latitude,
       longitude: data.searchContext.longitude,
@@ -130,10 +160,14 @@ locationController = setupLocationDropdowns({ regionControl, universityControl, 
 
 document.getElementById('searchForm').addEventListener('submit', (e) => {
   e.preventDefault();
+  currentPage = 1;
   loadHostels(currentFilters());
 });
 
-document.getElementById('sortInput')?.addEventListener('change', () => loadHostels(currentFilters()));
+document.getElementById('sortInput')?.addEventListener('change', () => {
+  currentPage = 1;
+  loadHostels(currentFilters());
+});
 
 const filterToggle = document.getElementById('filterToggle');
 const filterPanel = document.getElementById('filterPanel');
@@ -142,7 +176,10 @@ if (filterToggle && filterPanel) {
     filterPanel.style.display = filterPanel.style.display === 'none' ? 'block' : 'none';
   });
 }
-document.getElementById('applyFiltersBtn')?.addEventListener('click', () => loadHostels(currentFilters()));
+document.getElementById('applyFiltersBtn')?.addEventListener('click', () => {
+  currentPage = 1;
+  loadHostels(currentFilters());
+});
 
 // If arriving from the landing page's hero search (or any link) with a
 // region/university/campus already chosen, restore that selection and run

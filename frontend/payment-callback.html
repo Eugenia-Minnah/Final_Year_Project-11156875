@@ -1,0 +1,30 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="student-dashboard.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+  </nav>
+
+  <div class="auth-wrapper">
+    <div class="auth-card" style="text-align:center;">
+      <h1 id="statusHeading">Confirming your payment…</h1>
+      <p id="statusMessage" style="color:var(--text-muted);">Please wait a moment, we're checking with Paystack.</p>
+      <a href="student-dashboard.html" class="btn btn-primary full-width" style="margin-top:20px; display:none;" id="dashboardLink">Go to My Bookings</a>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/payment-callback.js"></script>
+</body>
+</html>

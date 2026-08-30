@@ -3,8 +3,10 @@
 // bookings, and cancelling one.
 
 const express = require('express');
+const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { initializePayment, verifyPayment } = require('../utils/paystack');
 
 const router = express.Router();
 
@@ -63,7 +65,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
 router.get('/mine', requireAuth, requireRole('student'), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT b.id, b.status, b.deposit_amount, b.created_at,
+      `SELECT b.id, b.status, b.deposit_amount, b.created_at, b.payment_status, b.payment_reference,
               r.room_type, r.price_per_year,
               h.id AS hostel_id, h.name AS hostel_name
        FROM bookings b
@@ -112,6 +114,91 @@ router.post('/:id/cancel', requireAuth, requireRole('student'), async (req, res)
     res.status(500).json({ error: 'Could not cancel booking.' });
   } finally {
     client.release();
+  }
+});
+
+// POST /api/bookings/:id/pay — starts a real Paystack payment for this
+// booking's deposit (card or Mobile Money — Paystack's hosted checkout
+// offers both automatically for GHS). Returns a URL to redirect the
+// student to.
+router.post('/:id/pay', requireAuth, requireRole('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bookingResult = await pool.query(
+      `SELECT b.*, u.email FROM bookings b JOIN users u ON u.id = b.student_id
+       WHERE b.id = $1 AND b.student_id = $2`,
+      [id, req.user.id]
+    );
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found.' });
+    }
+    const booking = bookingResult.rows[0];
+
+    if (booking.payment_status === 'paid') {
+      return res.status(400).json({ error: 'This booking has already been paid for.' });
+    }
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ error: 'This booking has been cancelled — you cannot pay for it.' });
+    }
+
+    // A fresh reference each time, so retrying payment after a failed
+    // attempt doesn't collide with the earlier one.
+    const reference = 'shf_' + crypto.randomBytes(10).toString('hex');
+    const amountInPesewas = Math.round(Number(booking.deposit_amount) * 100);
+    const callbackUrl = `http://localhost:${process.env.PORT || 5000}/payment-callback.html`;
+
+    const payment = await initializePayment({
+      email: booking.email,
+      amountInPesewas,
+      reference,
+      callbackUrl,
+    });
+
+    await pool.query('UPDATE bookings SET payment_reference = $1 WHERE id = $2', [reference, id]);
+
+    res.json({ authorizationUrl: payment.authorization_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Could not start payment.' });
+  }
+});
+
+// GET /api/bookings/verify/:reference — confirms a payment with Paystack
+// directly (never trusts the frontend redirect alone) and marks the
+// booking as paid/confirmed if it genuinely succeeded.
+router.get('/verify/:reference', requireAuth, async (req, res) => {
+  try {
+    const { reference } = req.params;
+
+    const bookingResult = await pool.query(
+      `SELECT b.*, r.room_type, h.name AS hostel_name
+       FROM bookings b
+       JOIN rooms r ON r.id = b.room_id
+       JOIN hostels h ON h.id = r.hostel_id
+       WHERE b.payment_reference = $1 AND b.student_id = $2`,
+      [reference, req.user.id]
+    );
+    if (bookingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No booking found for this payment reference.' });
+    }
+    const booking = bookingResult.rows[0];
+
+    const verification = await verifyPayment(reference);
+
+    if (verification.status === 'success') {
+      await pool.query(
+        "UPDATE bookings SET payment_status = 'paid', paid_at = NOW(), status = 'confirmed' WHERE id = $1",
+        [booking.id]
+      );
+      return res.json({ success: true, hostelName: booking.hostel_name, roomType: booking.room_type });
+    }
+
+    await pool.query("UPDATE bookings SET payment_status = 'failed' WHERE id = $1", [booking.id]);
+    res.json({ success: false, message: 'Payment was not successful.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Could not verify payment.' });
   }
 });
 

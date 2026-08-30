@@ -166,9 +166,18 @@ async function loadHostelDetail() {
         }
 
         try {
-          await apiRequest('/api/bookings', { method: 'POST', auth: true, body: { roomId } });
-          alert('Booking confirmed! You can see it under "My bookings" on your dashboard.');
-          loadHostelDetail(); // refresh to show updated availability
+          const booking = await apiRequest('/api/bookings', { method: 'POST', auth: true, body: { roomId } });
+
+          // Straight into payment — this is now a real deposit, not just
+          // a recorded intent. If starting payment fails for any reason,
+          // the booking itself is still safely saved either way.
+          try {
+            const payment = await apiRequest(`/api/bookings/${booking.id}/pay`, { method: 'POST', auth: true });
+            window.location.href = payment.authorizationUrl;
+          } catch (payErr) {
+            alert('Booking saved, but starting payment failed: ' + payErr.message + '\nYou can try paying again from "My bookings" on your dashboard.');
+            loadHostelDetail();
+          }
         } catch (err) {
           alert('Could not complete booking: ' + err.message);
         }

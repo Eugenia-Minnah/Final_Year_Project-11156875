@@ -1,4 +1,4 @@
-# Smart Hostel Finder — Full Stack
+# Smart Hostel Finder — Full Stack Starter
 
 **Stack**
 - Database: PostgreSQL (SQL)
