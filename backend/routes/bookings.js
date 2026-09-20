@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
+const { createNotification } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -172,7 +173,7 @@ router.get('/verify/:reference', requireAuth, async (req, res) => {
     const { reference } = req.params;
 
     const bookingResult = await pool.query(
-      `SELECT b.*, r.room_type, h.name AS hostel_name
+      `SELECT b.*, r.room_type, h.id AS hostel_id, h.name AS hostel_name, h.owner_id AS hostel_owner_id
        FROM bookings b
        JOIN rooms r ON r.id = b.room_id
        JOIN hostels h ON h.id = r.hostel_id
@@ -191,6 +192,18 @@ router.get('/verify/:reference', requireAuth, async (req, res) => {
         "UPDATE bookings SET payment_status = 'paid', paid_at = NOW(), status = 'confirmed' WHERE id = $1",
         [booking.id]
       );
+
+      await createNotification(
+        req.user.id,
+        `Your deposit for ${booking.room_type} at ${booking.hostel_name} has been confirmed.`,
+        `hostel.html?id=${booking.hostel_id}`
+      );
+      await createNotification(
+        booking.hostel_owner_id,
+        `A new booking (with paid deposit) has come in for ${booking.room_type} at ${booking.hostel_name}.`,
+        'owner-dashboard.html'
+      );
+
       return res.json({ success: true, hostelName: booking.hostel_name, roomType: booking.room_type });
     }
 

@@ -105,3 +105,62 @@ async function loadPendingHostels() {
 }
 
 loadPendingHostels();
+
+// ---------- Hostel claim requests ----------
+async function loadClaimRequests() {
+  const list = document.getElementById('claimsList');
+  if (!list) return; // admin.html not updated with the claims section yet — skip gracefully
+  list.innerHTML = '<p class="empty-state">Loading…</p>';
+
+  try {
+    const claims = await apiRequest('/api/hostels/admin/claims', { auth: true });
+
+    if (claims.length === 0) {
+      list.innerHTML = '<p class="empty-state">No pending claim requests.</p>';
+      return;
+    }
+
+    list.innerHTML = claims.map(c => `
+      <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
+        <div>
+          <strong><a href="hostel.html?id=${c.hostel_id}">${c.hostel_name}</a></strong>
+          <div style="font-size:13px; color:var(--text-muted);">
+            Requested by ${c.requester_name} (${c.requester_email})
+            ${c.message ? '<br>"' + c.message + '"' : ''}
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-primary approve-claim-btn" data-id="${c.id}">Approve</button>
+          <button type="button" class="btn btn-outline reject-claim-btn" data-id="${c.id}">Reject</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.approve-claim-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Approve this claim and transfer ownership of the hostel?')) return;
+        try {
+          await apiRequest(`/api/hostels/claims/${btn.getAttribute('data-id')}/approve`, { method: 'PUT', auth: true });
+          loadClaimRequests();
+        } catch (err) {
+          alert('Could not approve claim: ' + err.message);
+        }
+      });
+    });
+
+    document.querySelectorAll('.reject-claim-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await apiRequest(`/api/hostels/claims/${btn.getAttribute('data-id')}/reject`, { method: 'PUT', auth: true });
+          loadClaimRequests();
+        } catch (err) {
+          alert('Could not reject claim: ' + err.message);
+        }
+      });
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="empty-state">Could not load claim requests: ${err.message}</p>`;
+  }
+}
+
+loadClaimRequests();

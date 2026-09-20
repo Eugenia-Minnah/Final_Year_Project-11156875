@@ -13,6 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole, optionalAuth } = require('../middleware/auth');
+const { createNotification } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -286,15 +287,17 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const { id } = req.params;
 
     const hostelResult = await pool.query(
-      `SELECT h.*, r.name AS region_name
+      `SELECT h.*, r.name AS region_name, u.email AS owner_email
        FROM hostels h
        LEFT JOIN regions r ON r.id = h.region_id
+       JOIN users u ON u.id = h.owner_id
        WHERE h.id = $1`,
       [id]
     );
     if (hostelResult.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found.' });
     }
+    const isUnclaimed = hostelResult.rows[0].owner_email === 'directory@smarthostelfinder.local';
 
     const roomsResult = await pool.query('SELECT * FROM rooms WHERE hostel_id = $1', [id]);
     const reviewsResult = await pool.query(
@@ -313,8 +316,11 @@ router.get('/:id', optionalAuth, async (req, res) => {
       viewRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${referenceCampus.latitude},${referenceCampus.longitude}&destination=${hostelWithDistance.latitude},${hostelWithDistance.longitude}`;
     }
 
+    const { owner_email, ...hostelWithoutEmail } = hostelWithDistance;
+
     res.json({
-      ...hostelWithDistance,
+      ...hostelWithoutEmail,
+      isUnclaimed,
       rooms: roomsResult.rows,
       reviews: reviewsResult.rows,
       referenceCampus: referenceCampus
@@ -548,6 +554,13 @@ router.put('/:id/verify', requireAuth, requireRole('admin'), async (req, res) =>
       [req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Hostel not found.' });
+
+    await createNotification(
+      result.rows[0].owner_id,
+      `Your hostel "${result.rows[0].name}" has been approved and is now verified.`,
+      `hostel.html?id=${result.rows[0].id}`
+    );
+
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -559,12 +572,22 @@ router.put('/:id/verify', requireAuth, requireRole('admin'), async (req, res) =>
 // removes their own). Cascades to its rooms/bookings/reviews automatically.
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const hostelResult = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [req.params.id]);
+    const hostelResult = await pool.query('SELECT owner_id, name FROM hostels WHERE id = $1', [req.params.id]);
     if (hostelResult.rows.length === 0) return res.status(404).json({ error: 'Hostel not found.' });
 
     const isOwner = hostelResult.rows[0].owner_id === req.user.id;
     if (!isOwner && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'You do not have permission to remove this hostel.' });
+    }
+
+    // Only notify when an ADMIN removes someone ELSE's listing (a rejection) —
+    // not when an owner deletes their own hostel themselves.
+    if (!isOwner && req.user.role === 'admin') {
+      await createNotification(
+        hostelResult.rows[0].owner_id,
+        `Your hostel listing "${hostelResult.rows[0].name}" was reviewed and removed by an admin.`,
+        'owner-dashboard.html'
+      );
     }
 
     await pool.query('DELETE FROM hostels WHERE id = $1', [req.params.id]);
@@ -651,6 +674,134 @@ router.post('/:id/image', requireAuth, handleUpload, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not upload image.' });
+  }
+});
+
+// POST /api/hostels/:id/claim — an owner requests ownership of a
+// directory-listed (unclaimed) hostel. Does NOT transfer ownership
+// immediately — an admin must approve first.
+router.post('/:id/claim', requireAuth, requireRole('owner'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    const hostelResult = await pool.query(
+      `SELECT h.id, u.email AS owner_email FROM hostels h JOIN users u ON u.id = h.owner_id WHERE h.id = $1`,
+      [id]
+    );
+    if (hostelResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found.' });
+    }
+    if (hostelResult.rows[0].owner_email !== 'directory@smarthostelfinder.local') {
+      return res.status(400).json({ error: 'This hostel is already managed by an owner and cannot be claimed.' });
+    }
+
+    const existing = await pool.query(
+      "SELECT id FROM hostel_claims WHERE hostel_id = $1 AND requested_by = $2 AND status = 'pending'",
+      [id, req.user.id]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'You already have a pending claim request for this hostel.' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO hostel_claims (hostel_id, requested_by, message)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [id, req.user.id, message || null]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not submit your claim request.' });
+  }
+});
+
+// GET /api/hostels/admin/claims — admin only. Lists pending claim requests.
+router.get('/admin/claims', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT c.id, c.message, c.created_at,
+              h.id AS hostel_id, h.name AS hostel_name,
+              u.id AS requester_id, u.full_name AS requester_name, u.email AS requester_email
+       FROM hostel_claims c
+       JOIN hostels h ON h.id = c.hostel_id
+       JOIN users u ON u.id = c.requested_by
+       WHERE c.status = 'pending'
+       ORDER BY c.created_at ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load claim requests.' });
+  }
+});
+
+// PUT /api/hostels/claims/:claimId/approve — admin only. Transfers
+// ownership of the hostel to the requesting owner.
+router.put('/claims/:claimId/approve', requireAuth, requireRole('admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { claimId } = req.params;
+
+    const claimResult = await client.query('SELECT * FROM hostel_claims WHERE id = $1', [claimId]);
+    if (claimResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Claim request not found.' });
+    }
+    const claim = claimResult.rows[0];
+
+    await client.query('BEGIN');
+    await client.query('UPDATE hostels SET owner_id = $1 WHERE id = $2', [claim.requested_by, claim.hostel_id]);
+    await client.query(
+      "UPDATE hostel_claims SET status = 'approved', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2",
+      [req.user.id, claimId]
+    );
+    // Any other pending claims on the same hostel are now moot — reject them automatically.
+    await client.query(
+      "UPDATE hostel_claims SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW() WHERE hostel_id = $2 AND id != $3 AND status = 'pending'",
+      [req.user.id, claim.hostel_id, claimId]
+    );
+    await client.query('COMMIT');
+
+    const hostelRow = await pool.query('SELECT name FROM hostels WHERE id = $1', [claim.hostel_id]);
+    await createNotification(
+      claim.requested_by,
+      `Your claim for "${hostelRow.rows[0]?.name}" was approved — you can now manage this listing.`,
+      `hostel.html?id=${claim.hostel_id}`
+    );
+
+    res.json({ message: 'Claim approved — ownership transferred.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Could not approve this claim.' });
+  } finally {
+    client.release();
+  }
+});
+
+// PUT /api/hostels/claims/:claimId/reject — admin only.
+router.put('/claims/:claimId/reject', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      "UPDATE hostel_claims SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 AND status = 'pending' RETURNING *",
+      [req.user.id, req.params.claimId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Claim request not found or already reviewed.' });
+    }
+
+    const hostelRow = await pool.query('SELECT name FROM hostels WHERE id = $1', [result.rows[0].hostel_id]);
+    await createNotification(
+      result.rows[0].requested_by,
+      `Your claim for "${hostelRow.rows[0]?.name}" was not approved.`,
+      `hostel.html?id=${result.rows[0].hostel_id}`
+    );
+
+    res.json({ message: 'Claim rejected.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not reject this claim.' });
   }
 });
 

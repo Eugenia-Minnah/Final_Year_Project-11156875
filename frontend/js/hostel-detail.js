@@ -81,6 +81,17 @@ async function loadHostelDetail() {
       ? `<a href="edit-hostel.html?id=${h.id}" class="btn btn-outline" style="margin-top:12px; display:inline-block;">✏️ Edit this hostel</a>`
       : '';
 
+    const claimBlock = (h.isUnclaimed && viewer && viewer.role === 'owner')
+      ? `
+        <div style="margin-top:12px; padding:14px 16px; background:#FFF8E6; border:1px solid #F0D98C; border-radius:10px;">
+          <p style="margin:0 0 8px; font-size:14px;"><strong>Is this your hostel?</strong> This listing was added from public research and isn't managed by anyone yet.</p>
+          <button type="button" class="btn btn-outline" id="claimHostelBtn">Claim this hostel</button>
+        </div>
+      `
+      : (h.isUnclaimed
+          ? `<p style="margin-top:12px; font-size:13px; color:var(--text-muted);">This listing is unclaimed — sign in as a hostel owner to claim it if it's yours.</p>`
+          : '');
+
     const reviewFormHtml = (viewer && viewer.role === 'student')
       ? `
         <div class="auth-card" style="max-width:100%; padding:20px; margin-bottom:20px;">
@@ -115,6 +126,7 @@ async function loadHostelDetail() {
       <p>${h.address || ''}</p>
       <p style="color:var(--text-muted);">${h.description || ''}</p>
       ${editButton}
+      ${claimBlock}
 
       <h3 style="margin-top:30px;">Amenities</h3>
       ${amenitiesHtml}
@@ -200,6 +212,24 @@ async function loadHostelDetail() {
           loadHostelDetail(); // refresh to show the new/updated review
         } catch (err) {
           alert('Could not save your review: ' + err.message);
+        }
+      });
+    }
+
+    // ---------- Claim this hostel ----------
+    const claimBtn = document.getElementById('claimHostelBtn');
+    if (claimBtn) {
+      claimBtn.addEventListener('click', async () => {
+        const message = prompt('Optional: add a short note for the admin reviewing your claim (e.g. how they can verify you manage this hostel).') || '';
+        claimBtn.textContent = 'Submitting...';
+        claimBtn.disabled = true;
+        try {
+          await apiRequest(`/api/hostels/${hostelId}/claim`, { method: 'POST', auth: true, body: { message } });
+          alert('Claim submitted! An admin will review it and transfer ownership if approved.');
+        } catch (err) {
+          alert('Could not submit claim: ' + err.message);
+          claimBtn.textContent = 'Claim this hostel';
+          claimBtn.disabled = false;
         }
       });
     }

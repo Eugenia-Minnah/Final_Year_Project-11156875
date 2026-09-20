@@ -18,7 +18,15 @@
     <div class="welcome">
       Welcome, <strong id="userName">…</strong>
     </div>
+    <a href="explore.html" class="btn btn-outline">Browse hostels</a>
     <a href="add-hostel.html" class="btn btn-primary">+ Add hostel</a>
+    <div style="position:relative;">
+      <button type="button" id="notificationBell" class="btn btn-outline" style="position:relative;">
+        🔔
+        <span id="notificationBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#B3261E; color:white; font-size:11px; font-weight:700; border-radius:10px; padding:1px 6px;"></span>
+      </button>
+      <div id="notificationDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 6px); width:320px; max-height:400px; overflow-y:auto; background:white; border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100;"></div>
+    </div>
     <a href="owner-profile.html" class="btn btn-outline">My Profile</a>
     <button class="btn btn-outline" id="logoutBtn">Log out</button>
   </header>
@@ -30,8 +38,10 @@
   </section>
 
   <script src="js/api.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/role-redirect.js"></script>
   <script src="js/geocode-client.js"></script>
   <script src="js/owner-dashboard.js"></script>
+  <script>initNotificationBell();</script>
 </body>
 </html>

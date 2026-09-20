@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const hostelRoutes = require('./routes/hostels');
 const locationRoutes = require('./routes/locations');
 const bookingRoutes = require('./routes/bookings');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/hostels', hostelRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Simple health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

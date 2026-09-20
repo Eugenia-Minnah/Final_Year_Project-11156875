@@ -27,7 +27,7 @@ async function loadMyHostels() {
   try {
     const hostels = await apiRequest('/api/hostels/mine', { auth: true });
     if (hostels.length === 0) {
-      list.innerHTML = '<p class="empty-state">You have not added any hostels yet. Use "+ Add hostel" above to get started.</p>';
+      list.innerHTML = '<p class="empty-state">You have not added any hostels yet. Use "+ Add hostel" above to list a new one, or <a href="explore.html">browse existing hostels</a> if you\'d like to claim one that\'s already listed.</p>';
       return;
     }
     list.innerHTML = hostels.map(function (h) {
