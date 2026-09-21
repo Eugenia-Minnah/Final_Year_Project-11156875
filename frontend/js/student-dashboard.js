@@ -33,11 +33,11 @@ async function loadMyBookings() {
       var paymentColor = b.payment_status === 'paid' ? 'var(--green)' : (b.payment_status === 'failed' ? '#B3261E' : 'var(--text-muted)');
       return '<div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">' +
         '<div>' +
-        '<strong><a href="hostel.html?id=' + b.hostel_id + '">' + b.hostel_name + '</a></strong>' +
+        '<strong><a href="hostel.html?id=' + b.hostel_id + '">' + escapeHtml(b.hostel_name) + '</a></strong>' +
         '<div style="font-size:13px; color:var(--text-muted);">' +
-        b.room_type + ' &middot; Deposit GH\u20B5' + Number(b.deposit_amount).toLocaleString() +
-        ' &middot; Status: <span style="text-transform:capitalize; font-weight:600; color:' + (b.status === 'cancelled' ? 'var(--text-muted)' : 'var(--green)') + ';">' + b.status + '</span>' +
-        ' &middot; Payment: <span style="text-transform:capitalize; font-weight:600; color:' + paymentColor + ';">' + b.payment_status + '</span>' +
+        escapeHtml(b.room_type) + ' &middot; Deposit GH₵' + Number(b.deposit_amount).toLocaleString() +
+        ' &middot; Status: <span style="text-transform:capitalize; font-weight:600; color:' + (b.status === 'cancelled' ? 'var(--text-muted)' : 'var(--green)') + ';">' + escapeHtml(b.status) + '</span>' +
+        ' &middot; Payment: <span style="text-transform:capitalize; font-weight:600; color:' + paymentColor + ';">' + escapeHtml(b.payment_status) + '</span>' +
         '</div></div>' +
         '<div style="display:flex; gap:8px;">' +
         (b.status !== 'cancelled' && b.payment_status !== 'paid'
@@ -77,7 +77,7 @@ async function loadMyBookings() {
       });
     });
   } catch (err) {
-    list.innerHTML = '<p class="empty-state">Could not load your bookings: ' + err.message + '</p>';
+    list.innerHTML = '<p class="empty-state">Could not load your bookings: ' + escapeHtml(err.message) + '</p>';
   }
 }
 loadMyBookings();
@@ -93,10 +93,10 @@ function renderResultsHeader(searchContext, hostelCount) {
   }
   box.innerHTML =
     '<div class="results-header"><div class="breadcrumb">' +
-    'Hostels near <strong>' + searchContext.campusName + '</strong>' +
-    ' &nbsp;\u00B7&nbsp; \uD83D\uDCCD ' + searchContext.regionName +
-    ' &nbsp;\u00B7&nbsp; \uD83C\uDF93 ' + searchContext.universityName +
-    ' &nbsp;\u00B7&nbsp; ' + hostelCount + ' found' +
+    'Hostels near <strong>' + escapeHtml(searchContext.campusName) + '</strong>' +
+    ' &nbsp;·&nbsp; 📍 ' + escapeHtml(searchContext.regionName) +
+    ' &nbsp;·&nbsp; 🎓 ' + escapeHtml(searchContext.universityName) +
+    ' &nbsp;·&nbsp; ' + hostelCount + ' found' +
     '</div></div>';
 }
 
@@ -109,11 +109,11 @@ function renderHostelCards(hostels, container) {
   container.innerHTML = hostels.map(function (h) {
     return '<a href="hostel.html?id=' + h.id + (selectedCampusId ? '&campusId=' + selectedCampusId : '') + '" class="hostel-card" style="display:block;">' +
       '<div class="thumb"' + (h.cover_image_url ? ' style="background-image:url(\'' + h.cover_image_url + '\'); background-size:cover; background-position:center;"' : '') + '></div><div class="body">' +
-      '<h3>' + h.name + ' ' + (h.is_verified ? '<span class="badge-verified">Verified</span>' : '') + '</h3>' +
-      '<div class="region">' + (h.city ? h.city + ', ' : '') + (h.region_name || '') + '</div>' +
-      '<div>' + (h.address || '') + '</div>' +
-      (h.distance_km !== undefined ? '<div style="font-size:13px; color:var(--green); font-weight:600;">\uD83D\uDCCD ' + h.distance_km + ' km from ' + selectedCampusName + '</div>' : '') +
-      '<div class="price">' + (h.from_price ? 'From GH\u20B5' + Number(h.from_price).toLocaleString() + ' / year' : 'Contact for pricing') + '</div>' +
+      '<h3>' + escapeHtml(h.name) + ' ' + (h.is_verified ? '<span class="badge-verified">Verified</span>' : '') + '</h3>' +
+      '<div class="region">' + (h.city ? escapeHtml(h.city) + ', ' : '') + escapeHtml(h.region_name || '') + '</div>' +
+      '<div>' + escapeHtml(h.address || '') + '</div>' +
+      (h.distance_km !== undefined ? '<div style="font-size:13px; color:var(--green); font-weight:600;">📍 ' + h.distance_km + ' km from ' + escapeHtml(selectedCampusName) + '</div>' : '') +
+      '<div class="price">' + (h.from_price ? 'From GH₵' + Number(h.from_price).toLocaleString() + ' / year' : 'Contact for pricing') + '</div>' +
       '</div></a>';
   }).join('');
 }

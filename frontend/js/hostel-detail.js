@@ -24,7 +24,7 @@ async function loadHostelDetail() {
       ? `
         <div class="results-header" style="margin-top:12px;">
           <div class="breadcrumb">
-            📍 <strong>${h.distance_km} km</strong> from ${h.referenceCampus.name}, ${h.referenceCampus.universityName}
+            📍 <strong>${h.distance_km} km</strong> from ${escapeHtml(h.referenceCampus.name)}, ${escapeHtml(h.referenceCampus.universityName)}
             ${h.travel ? `&nbsp;·&nbsp; 🚶 ~${h.travel.walkingMinutes} min walk &nbsp;·&nbsp; 🚗 ~${h.travel.drivingMinutes} min drive` : ''}
           </div>
           ${h.viewRouteUrl ? `<a href="${h.viewRouteUrl}" target="_blank" class="btn btn-outline">View Route</a>` : ''}
@@ -47,7 +47,7 @@ async function loadHostelDetail() {
     ].filter(Boolean);
 
     const amenitiesHtml = amenities.length
-      ? `<ul style="padding-left:20px; margin:10px 0;">${amenities.map(a => `<li>${a}</li>`).join('')}</ul>`
+      ? `<ul style="padding-left:20px; margin:10px 0;">${amenities.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`
       : '<p class="empty-state">No amenity information listed yet.</p>';
 
     const viewer = typeof currentUser === 'function' ? currentUser() : null;
@@ -57,7 +57,7 @@ async function loadHostelDetail() {
       const deposit = r.deposit_amount != null ? Number(r.deposit_amount) : Math.round(Number(r.price_per_year) * 0.1);
       return `
       <tr>
-        <td>${r.room_type}</td>
+        <td>${escapeHtml(r.room_type)}</td>
         <td>GH₵${Number(r.price_per_year).toLocaleString()} / year</td>
         <td>GH₵${deposit.toLocaleString()}${r.deposit_amount == null ? ' (default 10%)' : ''}</td>
         <td>${r.available_units > 0 ? `${r.available_units} available` : 'Fully booked'}</td>
@@ -72,8 +72,8 @@ async function loadHostelDetail() {
 
     const reviewsHtml = (h.reviews || []).map(rev => `
       <div style="padding:12px 0; border-bottom:1px solid var(--border);">
-        <strong>${rev.full_name}</strong> — ${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}
-        <p style="margin:4px 0 0; color:var(--text-muted);">${rev.comment || ''}</p>
+        <strong>${escapeHtml(rev.full_name)}</strong> — ${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}
+        <p style="margin:4px 0 0; color:var(--text-muted);">${escapeHtml(rev.comment || '')}</p>
       </div>
     `).join('') || '<p class="empty-state">No reviews yet.</p>';
 
@@ -120,11 +120,11 @@ async function loadHostelDetail() {
       ${h.cover_image_url
         ? `<img src="${h.cover_image_url}" style="width:100%; max-height:340px; object-fit:cover; border-radius:14px; margin-top:12px;" />`
         : `<div class="thumb" style="height:200px; border-radius:14px; margin-top:12px;"></div>`}
-      <h2 style="margin-top:16px;">${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h2>
-      <p style="color:var(--green); font-weight:600;">${locationLine}</p>
+      <h2 style="margin-top:16px;">${escapeHtml(h.name)} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h2>
+      <p style="color:var(--green); font-weight:600;">${escapeHtml(locationLine)}</p>
       ${distanceBlock}
-      <p>${h.address || ''}</p>
-      <p style="color:var(--text-muted);">${h.description || ''}</p>
+      <p>${escapeHtml(h.address || '')}</p>
+      <p style="color:var(--text-muted);">${escapeHtml(h.description || '')}</p>
       ${editButton}
       ${claimBlock}
 

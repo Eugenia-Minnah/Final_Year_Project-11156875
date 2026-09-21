@@ -418,11 +418,10 @@ router.post('/', requireAuth, requireRole('owner', 'admin'), async (req, res) =>
 });
 
 // PUT /api/hostels/:id — protected. Only the hostel's own owner (or an
-// admin) can edit it. Updates the hostel's fields and replaces its room
-// types wholesale (simplest correct approach — avoids tricky diffing logic
-// for which existing room rows changed vs which are new vs which were removed).
+// admin) can edit it. Safely updates hostel fields and reconciles room types
+// (updates existing, inserts new, deletes only unbooked removed rooms) so existing
+// student bookings and payment records are preserved.
 router.put('/:id', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
-  const client = await pool.connect();
   try {
     const { id } = req.params;
 
@@ -445,56 +444,100 @@ router.put('/:id', requireAuth, requireRole('owner', 'admin'), async (req, res) 
       return res.status(400).json({ error: 'Hostel name and region are required.' });
     }
 
-    // Geocoding happens client-side before this request arrives — see the
-    // note in the POST route above.
     const finalLatitude = latitude || null;
     const finalLongitude = longitude || null;
 
-    await client.query('BEGIN');
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const hostelResult = await client.query(
-      `UPDATE hostels SET
-         name = $1, region_id = $2, city = $3, address = $4, description = $5,
-         latitude = $6, longitude = $7, has_cctv = $8, has_security_guard = $9,
-         has_shuttle = $10, has_water_supply = $11, has_electricity_backup = $12,
-         has_wifi = $13, has_parking = $14, nearby_bus_stop = $15
-       WHERE id = $16
-       RETURNING *`,
-      [
-        name, regionId, city, address, description, finalLatitude, finalLongitude,
-        !!hasCctv, !!hasSecurityGuard, !!hasShuttle, hasWaterSupply !== false,
-        !!hasElectricityBackup, !!hasWifi, !!hasParking, nearbyBusStop, id,
-      ]
-    );
+      const hostelResult = await client.query(
+        `UPDATE hostels SET
+           name = $1, region_id = $2, city = $3, address = $4, description = $5,
+           latitude = $6, longitude = $7, has_cctv = $8, has_security_guard = $9,
+           has_shuttle = $10, has_water_supply = $11, has_electricity_backup = $12,
+           has_wifi = $13, has_parking = $14, nearby_bus_stop = $15
+         WHERE id = $16
+         RETURNING *`,
+        [
+          name, regionId, city, address, description, finalLatitude, finalLongitude,
+          !!hasCctv, !!hasSecurityGuard, !!hasShuttle, hasWaterSupply !== false,
+          !!hasElectricityBackup, !!hasWifi, !!hasParking, nearbyBusStop, id,
+        ]
+      );
 
-    await client.query('DELETE FROM rooms WHERE hostel_id = $1', [id]);
+      // Reconcile room types safely
+      const currentRoomsRes = await client.query('SELECT * FROM rooms WHERE hostel_id = $1', [id]);
+      const currentRoomsMap = new Map(currentRoomsRes.rows.map(r => [r.id, r]));
+      const keptRoomIds = new Set();
+      const updatedRooms = [];
 
-    const updatedRooms = [];
-    if (Array.isArray(rooms)) {
-      for (const room of rooms) {
-        if (!room.roomType || !room.pricePerYear) continue;
-        const roomResult = await client.query(
-          `INSERT INTO rooms (hostel_id, room_type, price_per_year, total_units, available_units, deposit_amount)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING *`,
-          [
-            id, room.roomType, room.pricePerYear,
-            room.totalUnits || 1, room.availableUnits ?? room.totalUnits ?? 1,
-            room.depositAmount || null,
-          ]
-        );
-        updatedRooms.push(roomResult.rows[0]);
+      if (Array.isArray(rooms)) {
+        for (const room of rooms) {
+          if (!room.roomType || !room.pricePerYear) continue;
+
+          const roomId = Number(room.id);
+          if (roomId && currentRoomsMap.has(roomId)) {
+            // Update existing room
+            keptRoomIds.add(roomId);
+            const updateRes = await client.query(
+              `UPDATE rooms SET
+                 room_type = $1, price_per_year = $2, total_units = $3,
+                 available_units = $4, deposit_amount = $5
+               WHERE id = $6 AND hostel_id = $7
+               RETURNING *`,
+              [
+                room.roomType, room.pricePerYear,
+                room.totalUnits || 1, room.availableUnits ?? room.totalUnits ?? 1,
+                room.depositAmount || null, roomId, id,
+              ]
+            );
+            updatedRooms.push(updateRes.rows[0]);
+          } else {
+            // Insert new room
+            const insertRes = await client.query(
+              `INSERT INTO rooms (hostel_id, room_type, price_per_year, total_units, available_units, deposit_amount)
+               VALUES ($1, $2, $3, $4, $5, $6)
+               RETURNING *`,
+              [
+                id, room.roomType, room.pricePerYear,
+                room.totalUnits || 1, room.availableUnits ?? room.totalUnits ?? 1,
+                room.depositAmount || null,
+              ]
+            );
+            updatedRooms.push(insertRes.rows[0]);
+          }
+        }
       }
-    }
 
-    await client.query('COMMIT');
-    res.json({ ...hostelResult.rows[0], rooms: updatedRooms });
+      // Check if any removed room has active bookings
+      for (const [currId, currRoom] of currentRoomsMap.entries()) {
+        if (!keptRoomIds.has(currId)) {
+          const bookingCheck = await client.query(
+            "SELECT COUNT(*) FROM bookings WHERE room_id = $1 AND status != 'cancelled'",
+            [currId]
+          );
+          if (Number(bookingCheck.rows[0].count) > 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+              error: `Cannot remove room type "${currRoom.room_type}" because students currently have active bookings for it.`,
+            });
+          }
+          await client.query('DELETE FROM rooms WHERE id = $1 AND hostel_id = $2', [currId, id]);
+        }
+      }
+
+      await client.query('COMMIT');
+      res.json({ ...hostelResult.rows[0], rooms: updatedRooms });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error(err);
-    res.status(500).json({ error: 'Could not update hostel.' });
-  } finally {
-    client.release();
+    res.status(500).json({ error: err.message || 'Could not update hostel.' });
   }
 });
 

@@ -192,15 +192,17 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const userId = result.rows[0].id;
-    const token = crypto.randomBytes(32).toString('hex');
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
     await pool.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
-      [token, expires, userId]
+      [tokenHash, expires, userId]
     );
 
-    const resetLink = `http://localhost:${process.env.PORT || 5000}/reset-password.html?token=${token}`;
+    const baseUrl = process.env.APP_URL ? process.env.APP_URL.replace(/\/$/, '') : `${req.protocol}://${req.get('host')}`;
+    const resetLink = `${baseUrl}/reset-password.html?token=${rawToken}`;
 
     let emailSent = false;
     try {
@@ -229,9 +231,10 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Token and new password are required.' });
     }
 
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const result = await pool.query(
       'SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
-      [token]
+      [tokenHash]
     );
 
     if (result.rows.length === 0) {

@@ -108,6 +108,9 @@ function addRoomRow(existingRoom) {
   const rowId = 'room-row-' + roomRowCount;
   const row = document.createElement('div');
   row.id = rowId;
+  if (existingRoom && existingRoom.id) {
+    row.dataset.roomId = existingRoom.id;
+  }
   row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;';
   row.innerHTML =
     '<select class="room-type-input" style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:14px;">' +
@@ -140,6 +143,7 @@ function collectRooms() {
     var availableInput = row.querySelector('.room-available-input').value;
     var depositInput = row.querySelector('.room-deposit-input').value;
     return {
+      id: row.dataset.roomId ? Number(row.dataset.roomId) : undefined,
       roomType: row.querySelector('.room-type-input').value,
       pricePerYear: Number(row.querySelector('.room-price-input').value) || null,
       totalUnits: Number(row.querySelector('.room-units-input').value) || 1,

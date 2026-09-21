@@ -64,3 +64,15 @@ function logout() {
   localStorage.removeItem('shf_user');
   window.location.href = 'index.html';
 }
+
+// ---- HTML escaping helper to prevent Cross-Site Scripting (XSS) ----
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[m]));
+}

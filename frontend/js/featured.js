@@ -19,9 +19,9 @@ async function loadFeaturedHostels() {
       <a href="hostel.html?id=${h.id}" class="hostel-card" style="display:block;">
         <div class="thumb" ${h.cover_image_url ? `style="background-image:url('${h.cover_image_url}'); background-size:cover; background-position:center;"` : ''}></div>
         <div class="body">
-          <h3>${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h3>
-          <div class="region">${h.city ? `${h.city}, ` : ''}${h.region_name || ''}</div>
-          <div>${h.address || ''}</div>
+          <h3>${escapeHtml(h.name)} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h3>
+          <div class="region">${escapeHtml(h.city ? `${h.city}, ` : '')}${escapeHtml(h.region_name || '')}</div>
+          <div>${escapeHtml(h.address || '')}</div>
           <div class="price">${h.from_price ? 'From GH₵' + Number(h.from_price).toLocaleString() + ' / year' : 'Contact for pricing'}</div>
         </div>
       </a>

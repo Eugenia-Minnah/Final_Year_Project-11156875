@@ -16,7 +16,11 @@ const notificationRoutes = require('./routes/notifications');
 const app = express();
 
 app.use(cors());              // allows the frontend to call this API
-app.use(express.json());      // lets us read JSON from request bodies
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 
 // Make sure the folder for uploaded hostel photos exists before anything
 // tries to write to it.

@@ -18,9 +18,9 @@ function renderResultsHeader(searchContext, hostelCount) {
   box.innerHTML = `
     <div class="results-header">
       <div class="breadcrumb">
-        Hostels near <strong>${searchContext.campusName}</strong>
-        &nbsp;·&nbsp; 📍 ${searchContext.regionName}
-        &nbsp;·&nbsp; 🎓 ${searchContext.universityName}
+        Hostels near <strong>${escapeHtml(searchContext.campusName)}</strong>
+        &nbsp;·&nbsp; 📍 ${escapeHtml(searchContext.regionName)}
+        &nbsp;·&nbsp; 🎓 ${escapeHtml(searchContext.universityName)}
         &nbsp;·&nbsp; ${hostelCount} found
       </div>
     </div>
@@ -37,10 +37,10 @@ function renderHostelCards(hostels, container) {
     <a href="hostel.html?id=${h.id}${selectedCampusId ? '&campusId=' + selectedCampusId : ''}" class="hostel-card" style="display:block;">
       <div class="thumb" ${h.cover_image_url ? `style="background-image:url('${h.cover_image_url}'); background-size:cover; background-position:center;"` : ''}></div>
       <div class="body">
-        <h3>${h.name} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h3>
-        <div class="region">${h.city ? `${h.city}, ` : ''}${h.region_name || ''}</div>
-        <div>${h.address || ''}</div>
-        ${h.distance_km !== undefined ? `<div style="font-size:13px; color:var(--green); font-weight:600;">📍 ${h.distance_km} km from ${selectedCampusName}</div>` : ''}
+        <h3>${escapeHtml(h.name)} ${h.is_verified ? '<span class="badge-verified">Verified</span>' : ''}</h3>
+        <div class="region">${escapeHtml(h.city ? `${h.city}, ` : '')}${escapeHtml(h.region_name || '')}</div>
+        <div>${escapeHtml(h.address || '')}</div>
+        ${h.distance_km !== undefined ? `<div style="font-size:13px; color:var(--green); font-weight:600;">📍 ${h.distance_km} km from ${escapeHtml(selectedCampusName)}</div>` : ''}
         <div class="price">${h.from_price ? 'From GH₵' + Number(h.from_price).toLocaleString() + ' / year' : 'Contact for pricing'}</div>
       </div>
     </a>

@@ -25,10 +25,10 @@ async function loadPendingHostels() {
     list.innerHTML = hostels.map(h => `
       <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
         <div>
-          <strong><a href="hostel.html?id=${h.id}">${h.name}</a></strong>
+          <strong><a href="hostel.html?id=${h.id}">${escapeHtml(h.name)}</a></strong>
           ${h.latitude ? '' : '<span style="font-size:12px; color:#B3261E;">No location set</span>'}
           <div style="font-size:13px; color:var(--text-muted);">
-            ${h.city ? h.city + ', ' : ''}${h.region_name || 'No region set'} &middot; Owner: ${h.owner_name}
+            ${h.city ? escapeHtml(h.city) + ', ' : ''}${escapeHtml(h.region_name || 'No region set')} &middot; Owner: ${escapeHtml(h.owner_name)}
           </div>
         </div>
         <div style="display:flex; gap:8px;">
@@ -123,10 +123,10 @@ async function loadClaimRequests() {
     list.innerHTML = claims.map(c => `
       <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
         <div>
-          <strong><a href="hostel.html?id=${c.hostel_id}">${c.hostel_name}</a></strong>
+          <strong><a href="hostel.html?id=${c.hostel_id}">${escapeHtml(c.hostel_name)}</a></strong>
           <div style="font-size:13px; color:var(--text-muted);">
-            Requested by ${c.requester_name} (${c.requester_email})
-            ${c.message ? '<br>"' + c.message + '"' : ''}
+            Requested by ${escapeHtml(c.requester_name)} (${escapeHtml(c.requester_email)})
+            ${c.message ? '<br>"' + escapeHtml(c.message) + '"' : ''}
           </div>
         </div>
         <div style="display:flex; gap:8px;">
