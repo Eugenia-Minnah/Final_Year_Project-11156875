@@ -7,7 +7,7 @@
 let selectedCampusId = '';
 let selectedCampusName = '';
 let currentPage = 1;
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 9;
 
 function renderResultsHeader(searchContext, hostelCount) {
   const box = document.getElementById('resultsHeader');

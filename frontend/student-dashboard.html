@@ -1,129 +1,255 @@
 <!-- Language: HTML -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Smart Hostel Finder — Student</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-</head>
-<body>
-
-  <header class="dash-header">
-    <a href="student-dashboard.html" class="logo">
-      <span class="badge">S</span>
-      SmartHostel <span style="font-weight:400; font-size:13px; color:var(--text-muted);">— Student</span>
-    </a>
-    <a class="back-link" onclick="history.back()">← Back</a>
-    <div class="welcome">
-      Welcome, <strong id="userName">…</strong>
-    </div>
-    <div style="position:relative;">
-      <button type="button" id="notificationBell" class="btn btn-outline" style="position:relative;">
-        🔔
-        <span id="notificationBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#B3261E; color:white; font-size:11px; font-weight:700; border-radius:10px; padding:1px 6px;"></span>
-      </button>
-      <div id="notificationDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 6px); width:320px; max-height:400px; overflow-y:auto; background:white; border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100;"></div>
-    </div>
-    <a href="student-profile.html" class="btn btn-outline">My Profile</a>
-    <button class="btn btn-outline" id="logoutBtn">Log out</button>
-  </header>
-
-  <section class="section" id="myBookingsSection">
-    <h2>My bookings</h2>
-    <div id="myBookingsList"></div>
-  </section>
-
-  <section class="section">
-    <h2>Find your next hostel</h2>
-
-    <form class="filters" id="filterForm">
-      <div class="searchable-select">
-        <input type="text" id="regionInput" placeholder="Type or select a region" autocomplete="off" />
-        <input type="hidden" id="regionInputValue" />
-        <div class="searchable-dropdown" id="regionInputDropdown"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Smart Hostel Finder — Student</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  </head>
+  <body>
+    <header class="dash-header">
+      <a href="student-dashboard.html" class="logo">
+        <span class="badge">S</span>
+        SmartHostel
+        <span
+          style="font-weight: 400; font-size: 13px; color: var(--text-muted)"
+          >— Student</span
+        >
+      </a>
+      <a class="back-link" onclick="history.back()">← Back</a>
+      <div class="welcome">Welcome, <strong id="userName">…</strong></div>
+      <div style="position: relative">
+        <button
+          type="button"
+          id="notificationBell"
+          class="btn btn-outline"
+          style="position: relative"
+        >
+          🔔
+          <span
+            id="notificationBadge"
+            style="
+              display: none;
+              position: absolute;
+              top: -6px;
+              right: -6px;
+              background: #b3261e;
+              color: white;
+              font-size: 11px;
+              font-weight: 700;
+              border-radius: 10px;
+              padding: 1px 6px;
+            "
+          ></span>
+        </button>
+        <div
+          id="notificationDropdown"
+          style="
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            z-index: 100;
+          "
+        ></div>
       </div>
-      <div class="searchable-select">
-        <input type="text" id="universityInput" placeholder="Select a region first" autocomplete="off" disabled />
-        <input type="hidden" id="universityInputValue" />
-        <div class="searchable-dropdown" id="universityInputDropdown"></div>
-      </div>
-      <div class="searchable-select">
-        <input type="text" id="campusInput" placeholder="All campuses" autocomplete="off" disabled />
-        <input type="hidden" id="campusInputValue" />
-        <div class="searchable-dropdown" id="campusInputDropdown"></div>
-      </div>
-      <select id="roomTypeInput">
-        <option value="">Any room type</option>
-        <option value="1 in a room">1 in a room</option>
-        <option value="2 in a room">2 in a room</option>
-        <option value="4 in a room">4 in a room</option>
-      </select>
-      <button type="submit" class="btn btn-primary">Search</button>
-    </form>
+      <a href="student-inbox.html" class="btn btn-outline">My Inbox</a>
+      <a href="student-profile.html" class="btn btn-outline">My Profile</a>
+      <button class="btn btn-outline" id="logoutBtn">Log out</button>
+    </header>
 
-    <div id="resultsHeader"></div>
+    <section class="section" id="myBookingsSection">
+      <h2>My bookings</h2>
+      <div id="myBookingsList"></div>
+    </section>
 
-    <div class="results-controls" style="margin-bottom:16px;">
-      <button type="button" class="btn btn-outline" id="filterToggle">Filter</button>
-      <select id="sortInput">
-        <option value="recommended">Sort: Recommended</option>
-        <option value="closest">Sort: Closest</option>
-        <option value="farthest">Sort: Farthest</option>
-        <option value="price_low">Sort: Lowest price</option>
-        <option value="price_high">Sort: Highest price</option>
-        <option value="rating">Sort: Highest rated</option>
-        <option value="availability">Sort: Most available</option>
-      </select>
-    </div>
+    <section class="section">
+      <h2>Find your next hostel</h2>
 
-    <div id="filterPanel" style="display:none; background:white; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
-      <div class="filters">
-        <input type="number" id="minPriceInput" placeholder="Min price (GH₵)" />
-        <input type="number" id="maxPriceInput" placeholder="Max price (GH₵)" />
-        <select id="availabilityInput">
-          <option value="">Any availability</option>
-          <option value="available">Available</option>
-          <option value="limited">Limited availability</option>
-          <option value="full">Fully occupied</option>
+      <form class="filters" id="filterForm">
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="regionInput"
+            placeholder="Type or select a region"
+            autocomplete="off"
+          />
+          <input type="hidden" id="regionInputValue" />
+          <div class="searchable-dropdown" id="regionInputDropdown"></div>
+        </div>
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="universityInput"
+            placeholder="Select a region first"
+            autocomplete="off"
+            disabled
+          />
+          <input type="hidden" id="universityInputValue" />
+          <div class="searchable-dropdown" id="universityInputDropdown"></div>
+        </div>
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="campusInput"
+            placeholder="All campuses"
+            autocomplete="off"
+            disabled
+          />
+          <input type="hidden" id="campusInputValue" />
+          <div class="searchable-dropdown" id="campusInputDropdown"></div>
+        </div>
+        <select id="roomTypeInput">
+          <option value="">Any room type</option>
+          <option value="1 in a room">1 in a room</option>
+          <option value="2 in a room">2 in a room</option>
+          <option value="4 in a room">4 in a room</option>
         </select>
-        <select id="maxDistanceInput">
-          <option value="">Any distance</option>
-          <option value="1">Within 1 km</option>
-          <option value="3">Within 3 km</option>
-          <option value="5">Within 5 km</option>
-          <option value="10">Within 10 km</option>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+
+      <div id="resultsHeader"></div>
+
+      <div class="results-controls" style="margin-bottom: 16px">
+        <button type="button" class="btn btn-outline" id="filterToggle">
+          Filter
+        </button>
+        <select id="sortInput">
+          <option value="recommended">Sort: Recommended</option>
+          <option value="closest">Sort: Closest</option>
+          <option value="farthest">Sort: Farthest</option>
+          <option value="price_low">Sort: Lowest price</option>
+          <option value="price_high">Sort: Highest price</option>
+          <option value="rating">Sort: Highest rated</option>
+          <option value="availability">Sort: Most available</option>
         </select>
       </div>
-      <div style="margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; font-size:14px;">
-        <label><input type="checkbox" class="feature-checkbox" value="security"> Security</label>
-        <label><input type="checkbox" class="feature-checkbox" value="cctv"> CCTV</label>
-        <label><input type="checkbox" class="feature-checkbox" value="wifi"> Wi-Fi</label>
-        <label><input type="checkbox" class="feature-checkbox" value="parking"> Parking</label>
-        <label><input type="checkbox" class="feature-checkbox" value="water"> Water supply</label>
-        <label><input type="checkbox" class="feature-checkbox" value="electricity"> Electricity backup</label>
-        <label><input type="checkbox" class="feature-checkbox" value="shuttle"> Shuttle</label>
+
+      <div
+        id="filterPanel"
+        style="
+          display: none;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 20px;
+        "
+      >
+        <div class="filters">
+          <input
+            type="number"
+            id="minPriceInput"
+            placeholder="Min price (GH₵)"
+          />
+          <input
+            type="number"
+            id="maxPriceInput"
+            placeholder="Max price (GH₵)"
+          />
+          <select id="availabilityInput">
+            <option value="">Any availability</option>
+            <option value="available">Available</option>
+            <option value="limited">Limited availability</option>
+            <option value="full">Fully occupied</option>
+          </select>
+          <select id="maxDistanceInput">
+            <option value="">Any distance</option>
+            <option value="1">Within 1 km</option>
+            <option value="3">Within 3 km</option>
+            <option value="5">Within 5 km</option>
+            <option value="10">Within 10 km</option>
+          </select>
+        </div>
+        <div
+          style="
+            margin-top: 10px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 14px;
+          "
+        >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="security" />
+            Security</label
+          >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="cctv" />
+            CCTV</label
+          >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="wifi" />
+            Wi-Fi</label
+          >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="parking" />
+            Parking</label
+          >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="water" />
+            Water supply</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              class="feature-checkbox"
+              value="electricity"
+            />
+            Electricity backup</label
+          >
+          <label
+            ><input type="checkbox" class="feature-checkbox" value="shuttle" />
+            Shuttle</label
+          >
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="applyFiltersBtn"
+          style="margin-top: 14px"
+        >
+          Apply filters
+        </button>
       </div>
-      <button type="button" class="btn btn-primary" id="applyFiltersBtn" style="margin-top:14px;">Apply filters</button>
-    </div>
 
-    <div class="hostel-grid" id="hostelGrid">
-      <p class="empty-state">Loading hostels…</p>
-    </div>
+      <div class="hostel-grid" id="hostelGrid">
+        <p class="empty-state">Loading hostels…</p>
+      </div>
 
-    <h2 style="margin-top: 40px;">Map view</h2>
-    <div id="hostelMap" style="height: 420px; border-radius: 14px; border: 1px solid var(--border);"></div>
-  </section>
+      <h2 style="margin-top: 40px">Map view</h2>
+      <div
+        id="hostelMap"
+        style="
+          height: 420px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+        "
+      ></div>
+    </section>
 
-  <script src="js/api.js"></script>
-  <script src="js/notifications.js"></script>
-  <script src="js/role-redirect.js"></script>
-  <script src="js/searchable-select.js"></script>
-  <script src="js/locations.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/student-dashboard.js"></script>
-  <script>initNotificationBell();</script>
-</body>
+    <script src="js/api.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/role-redirect.js"></script>
+    <script src="js/searchable-select.js"></script>
+    <script src="js/locations.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/student-dashboard.js"></script>
+    <script>
+      initNotificationBell();
+    </script>
+  </body>
 </html>

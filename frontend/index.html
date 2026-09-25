@@ -1,80 +1,110 @@
 <!-- Language: HTML -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Hostel Finder</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-</head>
-<body>
-
-  <nav class="navbar">
-    <div class="logo">
-      <span class="badge">S</span>
-      SmartHostel
-    </div>
-    <a class="back-link" onclick="history.back()">← Back</a>
-    <div class="nav-links">
-      <a href="explore.html">Hostels</a>
-      <a href="#regions">Regions</a>
-      <a href="#how">How it works</a>
-      <a href="owner-login.html">Hostel Owners</a>
-    </div>
-    <div class="nav-actions">
-      <!-- Sign in is STUDENT-ONLY — hostel owners have their own separate
-           entry point (owner-login.html) and never land here. -->
-      <a href="student-login.html" class="btn btn-outline">Sign in</a>
-      <a href="signup.html" class="btn btn-primary">Get started</a>
-      <a href="owner-login.html" class="btn btn-outline" style="border-color: var(--navy);">List Your Hostel</a>
-    </div>
-  </nav>
-
-  <header class="hero">
-    <span class="pill">Verified listings · Real availability</span>
-    <h1>Find a verified hostel near your campus</h1>
-    <p>Select your region, university, and campus to see hostels ranked by real, calculated distance — not just a generic list.</p>
-
-    <form class="search-bar" id="heroSearchForm">
-      <div class="searchable-select">
-        <input type="text" id="regionInput" placeholder="Type or select a region" autocomplete="off" />
-        <input type="hidden" id="regionInputValue" />
-        <div class="searchable-dropdown" id="regionInputDropdown"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Hostel Finder</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="logo">
+        <span class="badge">S</span>
+        SmartHostel
       </div>
-      <div class="searchable-select">
-        <input type="text" id="universityInput" placeholder="Select a region first" autocomplete="off" disabled />
-        <input type="hidden" id="universityInputValue" />
-        <div class="searchable-dropdown" id="universityInputDropdown"></div>
+      <div class="nav-links">
+        <a href="explore.html">Hostels</a>
+        <a href="#regions">Regions</a>
+        <a href="#how">How it works</a>
+        <a href="owner-login.html">Hostel Owners</a>
       </div>
-      <div class="searchable-select">
-        <input type="text" id="campusInput" placeholder="All campuses" autocomplete="off" disabled />
-        <input type="hidden" id="campusInputValue" />
-        <div class="searchable-dropdown" id="campusInputDropdown"></div>
+      <div class="nav-actions">
+        <!-- Sign in is STUDENT-ONLY — hostel owners have their own separate
+    entry point (owner-login.html) and never land here. -->
+        <a href="student-login.html" class="btn btn-outline">Sign in</a>
+        <a href="signup.html" class="btn btn-primary">Get started</a>
+        <a
+          href="owner-login.html"
+          class="btn btn-outline"
+          style="border-color: var(--navy)"
+          >List Your Hostel</a
+        >
       </div>
-      <button type="submit" class="btn btn-primary">See hostels near my campus</button>
-    </form>
+    </nav>
 
-    <p style="margin-top: 14px; font-size: 14px;">
-      <a href="explore.html" style="color: white; text-decoration: underline;">Or browse every hostel without picking a campus →</a>
-    </p>
-  </header>
+    <header class="hero">
+      <span class="pill">Verified Listings · Real Availability</span>
+      <h1>Find a Verified Hostel Near Your Campus</h1>
+      <p>
+        Select your region, university, and campus to view accurate, up-to-date
+        hostel information with real, calculated distance.
+      </p>
 
-  <section class="section" id="hostels">
-    <h2>Featured hostels</h2>
-    <div class="hostel-grid" id="featuredGrid">
-      <p class="empty-state">Loading featured hostels…</p>
-    </div>
-    <div style="text-align:center; margin-top:24px;">
-      <a href="explore.html" class="btn btn-outline">Explore All Hostels</a>
-    </div>
-  </section>
+      <form class="search-bar" id="heroSearchForm">
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="regionInput"
+            placeholder="Type or select a region"
+            autocomplete="off"
+          />
+          <input type="hidden" id="regionInputValue" />
+          <div class="searchable-dropdown" id="regionInputDropdown"></div>
+        </div>
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="universityInput"
+            placeholder="Select a region first"
+            autocomplete="off"
+            disabled
+          />
+          <input type="hidden" id="universityInputValue" />
+          <div class="searchable-dropdown" id="universityInputDropdown"></div>
+        </div>
+        <div class="searchable-select">
+          <input
+            type="text"
+            id="campusInput"
+            placeholder="All campuses"
+            autocomplete="off"
+            disabled
+          />
+          <input type="hidden" id="campusInputValue" />
+          <div class="searchable-dropdown" id="campusInputDropdown"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          See hostels near my campus
+        </button>
+      </form>
 
-  <script src="js/api.js"></script>
-  <script src="js/searchable-select.js"></script>
-  <script src="js/locations.js"></script>
-  <script src="js/featured.js"></script>
-  <script src="js/hero-search.js"></script>
-</body>
+      <p style="margin-top: 14px; font-size: 14px">
+        <a href="explore.html" style="color: white; text-decoration: underline"
+          >Or browse every hostel without picking a campus →</a
+        >
+      </p>
+    </header>
+
+    <section class="section" id="hostels">
+      <h2>Featured hostels</h2>
+      <div class="hostel-grid" id="featuredGrid">
+        <p class="empty-state">Loading featured hostels…</p>
+      </div>
+      <div style="text-align: center; margin-top: 24px">
+        <a href="explore.html" class="btn btn-outline">Explore All Hostels</a>
+      </div>
+    </section>
+
+    <script src="js/api.js"></script>
+    <script src="js/searchable-select.js"></script>
+    <script src="js/locations.js"></script>
+    <script src="js/featured.js"></script>
+    <script src="js/hero-search.js"></script>
+  </body>
 </html>

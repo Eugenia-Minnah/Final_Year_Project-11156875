@@ -1,0 +1,36 @@
+<!-- Language: HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Inbox — Smart Hostel Finder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="owner-dashboard.html" class="logo">
+      <span class="badge">S</span>
+      SmartHostel
+    </a>
+    <a class="back-link" onclick="history.back()">← Back</a>
+  </nav>
+
+  <section class="section" style="max-width: 900px;">
+    <h2>My Inbox</h2>
+    <div style="display:flex; gap:20px; margin-top:20px;">
+      <div id="conversationList" style="width:280px; flex-shrink:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:white; max-height:600px; overflow-y:auto;">
+        <p class="empty-state" style="padding:16px;">Loading…</p>
+      </div>
+      <div id="messageThread" style="flex:1; border:1px solid var(--border); border-radius:12px; background:white; display:flex; flex-direction:column; min-height:500px;">
+        <p class="empty-state" style="padding:40px; margin:auto;">Select a conversation to view messages.</p>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/role-redirect.js"></script>
+  <script src="js/inbox.js" data-role="owner"></script>
+</body>
+</html>
