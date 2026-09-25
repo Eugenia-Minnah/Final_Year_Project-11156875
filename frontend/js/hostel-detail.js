@@ -81,6 +81,10 @@ async function loadHostelDetail() {
       ? `<a href="edit-hostel.html?id=${h.id}" class="btn btn-outline" style="margin-top:12px; display:inline-block;">✏️ Edit this hostel</a>`
       : '';
 
+    const messageButton = (viewer && viewer.role === 'student')
+      ? `<button type="button" class="btn btn-outline" id="messageOwnerBtn" style="margin-top:12px; margin-left:8px;">💬 Message the owner</button>`
+      : (!viewer ? `<a href="signin.html" class="btn btn-outline" style="margin-top:12px; margin-left:8px; display:inline-block;">💬 Sign in to message the owner</a>` : '');
+
     const claimBlock = (h.isUnclaimed && viewer && viewer.role === 'owner')
       ? `
         <div style="margin-top:12px; padding:14px 16px; background:#FFF8E6; border:1px solid #F0D98C; border-radius:10px;">
@@ -126,6 +130,7 @@ async function loadHostelDetail() {
       <p>${escapeHtml(h.address || '')}</p>
       <p style="color:var(--text-muted);">${escapeHtml(h.description || '')}</p>
       ${editButton}
+      ${messageButton}
       ${claimBlock}
 
       <h3 style="margin-top:30px;">Amenities</h3>
@@ -195,6 +200,23 @@ async function loadHostelDetail() {
         }
       });
     });
+
+    // ---------- Message the owner ----------
+    const messageOwnerBtn = document.getElementById('messageOwnerBtn');
+    if (messageOwnerBtn) {
+      messageOwnerBtn.addEventListener('click', async () => {
+        const message = prompt(`Send a message to the owner of "${h.name}":`);
+        if (!message || !message.trim()) return;
+        messageOwnerBtn.disabled = true;
+        try {
+          await apiRequest('/api/chat/start', { method: 'POST', auth: true, body: { hostelId, message } });
+          window.location.href = 'student-inbox.html';
+        } catch (err) {
+          alert('Could not send message: ' + err.message);
+          messageOwnerBtn.disabled = false;
+        }
+      });
+    }
 
     // ---------- Submit a review ----------
     const submitReviewBtn = document.getElementById('submitReviewBtn');
