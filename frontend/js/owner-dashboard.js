@@ -18,6 +18,22 @@ if (user) {
 
 document.getElementById('logoutBtn').addEventListener('click', logout);
 
+// ---------- Account menu (hamburger) dropdown ----------
+const accountMenuBtn = document.getElementById('accountMenuBtn');
+const accountDropdown = document.getElementById('accountDropdown');
+accountMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = accountDropdown.style.display === 'block';
+  accountDropdown.style.display = isOpen ? 'none' : 'block';
+  accountMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+document.addEventListener('click', (e) => {
+  if (!accountDropdown.contains(e.target) && e.target !== accountMenuBtn) {
+    accountDropdown.style.display = 'none';
+    accountMenuBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
 async function loadMyHostels() {
   const list = document.getElementById('myHostelsList');
   list.innerHTML = '<p class="empty-state">Loading your hostels...</p>';

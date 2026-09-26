@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole, optionalAuth } = require('../middleware/auth');
 const { createNotification } = require('../utils/notify');
+const { getRoadDistances } = require('../utils/routing');
 
 const router = express.Router();
 
@@ -42,16 +43,9 @@ const upload = multer({
 const DEFAULT_SEARCH_RADIUS_KM = 15;
 
 // ---------- Distance helper ----------
-function distanceInKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+// (Straight-line fallback math now lives in utils/routing.js, used only
+// when the real road-routing service is unreachable.)
+
 
 async function getCampusById(campusId) {
   if (!campusId) return null;
@@ -66,21 +60,40 @@ async function getCampusById(campusId) {
   return result.rows[0] || null;
 }
 
-function attachDistances(hostels, fromCampus) {
+// Attaches h.distance_km (real road distance, via OSRM) to every hostel
+// that has coordinates, relative to `fromCampus`. Falls back to
+// straight-line automatically (inside getRoadDistances) if the routing
+// service is unreachable. h._drivingMinutes is stashed alongside so
+// estimateTravelTimes() below can use the REAL driving time instead of
+// guessing one from the distance.
+async function attachDistances(hostels, fromCampus) {
   if (!fromCampus || !fromCampus.latitude) return hostels;
-  return hostels.map(h => {
-    if (h.latitude && h.longitude) {
-      const km = distanceInKm(fromCampus.latitude, fromCampus.longitude, h.latitude, h.longitude);
-      return { ...h, distance_km: Math.round(km * 10) / 10 };
-    }
-    return h;
+
+  const points = hostels.map(h =>
+    h.latitude && h.longitude ? { latitude: h.latitude, longitude: h.longitude } : null
+  );
+  const routeResults = await getRoadDistances(
+    { latitude: fromCampus.latitude, longitude: fromCampus.longitude },
+    points
+  );
+
+  return hostels.map((h, i) => {
+    const route = routeResults[i];
+    if (!route) return h;
+    return { ...h, distance_km: route.distanceKm, _drivingMinutes: route.drivingMinutes };
   });
 }
 
-function estimateTravelTimes(distanceKm) {
-  if (distanceKm == null) return null;
-  const walkingMinutes = Math.round((distanceKm / 5) * 60);
-  const drivingMinutes = Math.round((distanceKm / 25) * 60);
+// hostelWithDistance must already have gone through attachDistances().
+// Driving time comes straight from the real route when available;
+// walking time is still an estimate (5 km/h), but now based on the real
+// road distance rather than a straight line, so it's closer to reality too.
+function estimateTravelTimes(hostelWithDistance) {
+  if (hostelWithDistance.distance_km == null) return null;
+  const walkingMinutes = Math.round((hostelWithDistance.distance_km / 5) * 60);
+  const drivingMinutes = hostelWithDistance._drivingMinutes != null
+    ? hostelWithDistance._drivingMinutes
+    : Math.round((hostelWithDistance.distance_km / 25) * 60);
   return { walkingMinutes, drivingMinutes };
 }
 
@@ -179,7 +192,7 @@ router.get('/', optionalAuth, async (req, res) => {
     else if (availability === 'full') query += ' HAVING COALESCE(SUM(rm.available_units), 0) = 0';
 
     const result = await pool.query(query, values);
-    let hostels = attachDistances(result.rows, referenceCampus);
+    let hostels = await attachDistances(result.rows, referenceCampus);
 
     // Radius applies ONLY when a campus was actually selected as a
     // reference point — this is personalization/ranking, not restriction.
@@ -308,8 +321,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     );
 
     const referenceCampus = await getCampusById(req.query.campusId);
-    const [hostelWithDistance] = attachDistances([hostelResult.rows[0]], referenceCampus);
-    const travel = estimateTravelTimes(hostelWithDistance.distance_km);
+    const [hostelWithDistance] = await attachDistances([hostelResult.rows[0]], referenceCampus);
+    const travel = estimateTravelTimes(hostelWithDistance);
 
     let viewRouteUrl = null;
     if (referenceCampus && hostelWithDistance.latitude && hostelWithDistance.longitude) {

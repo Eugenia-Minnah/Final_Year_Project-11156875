@@ -249,6 +249,17 @@ document.getElementById('editHostelForm').addEventListener('submit', async funct
   errorBox.style.display = 'none';
   successBox.style.display = 'none';
 
+  var latValue = document.getElementById('hostelLat').value;
+  var lngValue = document.getElementById('hostelLng').value;
+  if (!latValue || !lngValue) {
+    var confirmed = window.confirm(
+      "You haven't dropped a pin on the map for this hostel's exact location. " +
+      'Without it, students won\'t see a distance-to-campus on this listing. ' +
+      'Save anyway?'
+    );
+    if (!confirmed) return;
+  }
+
   try {
     await apiRequest('/api/hostels/' + hostelId, {
       method: 'PUT',
