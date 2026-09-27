@@ -119,7 +119,7 @@ CREATE TABLE bookings (
                       CHECK (status IN ('pending', 'confirmed', 'cancelled')),
     deposit_amount    NUMERIC(10, 2) NOT NULL DEFAULT 0,
     payment_status    VARCHAR(20) NOT NULL DEFAULT 'unpaid'
-                      CHECK (payment_status IN ('unpaid', 'paid', 'failed')),
+                      CHECK (payment_status IN ('unpaid', 'paid', 'failed', 'refund_pending', 'refunded')),
     payment_reference VARCHAR(100),
     paid_at           TIMESTAMP,
     created_at        TIMESTAMP NOT NULL DEFAULT NOW()

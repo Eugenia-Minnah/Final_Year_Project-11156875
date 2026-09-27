@@ -104,7 +104,14 @@ router.post('/:id/cancel', requireAuth, requireRole('student'), async (req, res)
       return res.status(400).json({ error: 'This booking is already cancelled.' });
     }
 
-    await client.query("UPDATE bookings SET status = 'cancelled' WHERE id = $1", [id]);
+    // If the deposit was already paid, this cancellation needs a refund —
+    // flag it for an admin to handle manually, rather than silently
+    // leaving payment_status stuck at 'paid' with no way to track it.
+    const newPaymentStatus = booking.payment_status === 'paid' ? 'refund_pending' : booking.payment_status;
+    await client.query(
+      'UPDATE bookings SET status = $2, payment_status = $3 WHERE id = $1',
+      [id, 'cancelled', newPaymentStatus]
+    );
     await client.query('UPDATE rooms SET available_units = available_units + 1 WHERE id = $1', [booking.room_id]);
 
     await client.query('COMMIT');
@@ -115,6 +122,27 @@ router.post('/:id/cancel', requireAuth, requireRole('student'), async (req, res)
     res.status(500).json({ error: 'Could not cancel booking.' });
   } finally {
     client.release();
+  }
+});
+
+// PUT /api/bookings/:id/mark-refunded — admin confirms they've manually
+// refunded the student (via Paystack dashboard, Mobile Money, etc.) and
+// closes out the "Refund requested" flag. This does NOT call any payment
+// API itself — it's just the record-keeping step after a manual refund.
+router.put('/:id/mark-refunded', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      "UPDATE bookings SET payment_status = 'refunded' WHERE id = $1 AND payment_status = 'refund_pending' RETURNING *",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No refund-pending booking found with that id.' });
+    }
+    res.json({ message: 'Marked as refunded.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update refund status.' });
   }
 });
 

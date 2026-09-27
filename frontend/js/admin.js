@@ -33,6 +33,7 @@ async function loadPendingHostels() {
         </div>
         <div style="display:flex; gap:8px;">
           ${h.latitude ? '' : `<button type="button" class="btn btn-outline auto-locate-btn" data-id="${h.id}">📍 Auto-locate</button>`}
+          <a href="edit-hostel.html?id=${h.id}" class="btn btn-outline">✏️ Edit</a>
           <button type="button" class="btn btn-primary approve-btn" data-id="${h.id}">Approve</button>
           <button type="button" class="btn btn-outline reject-btn" data-id="${h.id}">Reject</button>
         </div>
@@ -164,3 +165,56 @@ async function loadClaimRequests() {
 }
 
 loadClaimRequests();
+
+// ---------- Refund requests ----------
+// Reuses GET /api/bookings/owner, which returns every booking for an
+// admin (not just one owner's), and filters down to the ones awaiting
+// a manual refund after a paid cancellation.
+async function loadRefundRequests() {
+  const list = document.getElementById('refundsList');
+  if (!list) return;
+  list.innerHTML = '<p class="empty-state">Loading…</p>';
+
+  try {
+    const allBookings = await apiRequest('/api/bookings/owner', { auth: true });
+    const refunds = allBookings.filter(b => b.payment_status === 'refund_pending');
+
+    if (refunds.length === 0) {
+      list.innerHTML = '<p class="empty-state">No refund requests right now.</p>';
+      return;
+    }
+
+    list.innerHTML = refunds.map(b => `
+      <div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">
+        <div>
+          <strong><a href="hostel.html?id=${b.hostel_id}">${escapeHtml(b.hostel_name)}</a></strong>
+          <div style="font-size:13px; color:var(--text-muted);">
+            ${escapeHtml(b.room_type)} &middot; Deposit GH₵${Number(b.deposit_amount).toLocaleString()}
+            &middot; ${escapeHtml(b.student_name)} (${escapeHtml(b.student_email)})
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-primary mark-refunded-btn" data-id="${b.id}">Mark as refunded</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.mark-refunded-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Confirm you have already sent this refund to the student?')) return;
+        btn.disabled = true;
+        try {
+          await apiRequest(`/api/bookings/${btn.getAttribute('data-id')}/mark-refunded`, { method: 'PUT', auth: true });
+          loadRefundRequests();
+        } catch (err) {
+          alert('Could not update refund status: ' + err.message);
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="empty-state">Could not load refund requests: ${err.message}</p>`;
+  }
+}
+
+loadRefundRequests();

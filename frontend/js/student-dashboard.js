@@ -45,15 +45,30 @@ async function loadMyBookings() {
       list.innerHTML = '<p class="empty-state">You have not booked a room yet.</p>';
       return;
     }
+    var paymentLabels = {
+      unpaid: 'Unpaid',
+      paid: 'Paid',
+      failed: 'Failed',
+      refund_pending: 'Refund pending',
+      refunded: 'Refunded',
+    };
+    var paymentColors = {
+      unpaid: 'var(--text-muted)',
+      paid: 'var(--green)',
+      failed: '#B3261E',
+      refund_pending: '#B98900',
+      refunded: 'var(--text-muted)',
+    };
     list.innerHTML = bookings.map(function (b) {
-      var paymentColor = b.payment_status === 'paid' ? 'var(--green)' : (b.payment_status === 'failed' ? '#B3261E' : 'var(--text-muted)');
+      var paymentColor = paymentColors[b.payment_status] || 'var(--text-muted)';
+      var paymentLabel = paymentLabels[b.payment_status] || b.payment_status;
       return '<div class="hostel-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; margin-bottom:10px;">' +
         '<div>' +
         '<strong><a href="hostel.html?id=' + b.hostel_id + '">' + escapeHtml(b.hostel_name) + '</a></strong>' +
         '<div style="font-size:13px; color:var(--text-muted);">' +
         escapeHtml(b.room_type) + ' &middot; Deposit GH₵' + Number(b.deposit_amount).toLocaleString() +
         ' &middot; Status: <span style="text-transform:capitalize; font-weight:600; color:' + (b.status === 'cancelled' ? 'var(--text-muted)' : 'var(--green)') + ';">' + escapeHtml(b.status) + '</span>' +
-        ' &middot; Payment: <span style="text-transform:capitalize; font-weight:600; color:' + paymentColor + ';">' + escapeHtml(b.payment_status) + '</span>' +
+        ' &middot; Payment: <span style="font-weight:600; color:' + paymentColor + ';">' + escapeHtml(paymentLabel) + '</span>' +
         '</div></div>' +
         '<div style="display:flex; gap:8px;">' +
         (b.status !== 'cancelled' && b.payment_status !== 'paid'
