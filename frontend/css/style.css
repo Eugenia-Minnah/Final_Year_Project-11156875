@@ -40,7 +40,8 @@ a { text-decoration: none; color: inherit; }
   font-size: 20px;
 }
 
-.navbar .logo .badge {
+.navbar .logo .badge,
+.dash-header .logo .badge {
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -207,6 +208,41 @@ a { text-decoration: none; color: inherit; }
 /* ---------- Auth pages ---------- */
 .auth-wrapper {
   min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ---------- Full-bleed photo sign-in layout ---------- */
+.auth-split {
+  min-height: calc(100vh - 70px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-visual {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+}
+.auth-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(11, 27, 43, 0.55), rgba(14, 92, 78, 0.4));
+}
+.auth-visual-overlay {
+  display: none; /* quote text removed per request — element stays in HTML but is hidden */
+}
+.auth-form-side {
+  position: relative;
+  z-index: 2;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -33,12 +33,12 @@ async function sendPasswordResetEmail(toEmail, resetLink) {
   if (!t) return false; // not configured — caller falls back to console logging
 
   await t.sendMail({
-    from: `"Smart Hostel Finder" <${process.env.EMAIL_USER}>`,
+    from: `"HostelScout" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'Reset your Smart Hostel Finder password',
+    subject: 'Reset your HostelScout password',
     html: `
       <p>Hi,</p>
-      <p>Someone requested a password reset for this Smart Hostel Finder account.</p>
+      <p>Someone requested a password reset for this HostelScout account.</p>
       <p><a href="${resetLink}">Click here to set a new password</a></p>
       <p>Or copy this link into your browser:<br>${resetLink}</p>
       <p style="color:#666; font-size:13px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't be changed.</p>

@@ -48,5 +48,5 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Smart Hostel Finder server running at http://localhost:${PORT}`);
+  console.log(`HostelScout server running at http://localhost:${PORT}`);
 });

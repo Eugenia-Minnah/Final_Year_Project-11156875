@@ -18,7 +18,7 @@ async function geocodeAddress(query) {
       headers: {
         'Accept-Language': 'en',
         // Nominatim's usage policy requires a descriptive User-Agent identifying the app.
-        'User-Agent': 'SmartHostelFinder-StudentProject/1.0 (contact: owner@example.com)',
+        'User-Agent': 'HostelScoutFinder-StudentProject/1.0 (contact: owner@example.com)',
       },
     });
 

@@ -1,5 +1,5 @@
 // Language: JavaScript (Node.js)
-// Automated database initialization script for Smart Hostel Finder.
+// Automated database initialization script for HostelScout.
 // Executes canonical database/schema.sql and database/seed.sql.
 //
 // Run from the backend folder with: npm run db:setup
