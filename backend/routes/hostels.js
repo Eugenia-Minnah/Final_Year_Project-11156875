@@ -35,6 +35,27 @@ const upload = multer({
   },
 });
 
+// ---------- Hostel-claim proof upload configuration ----------
+// Separate from the cover-photo `upload` above: proof of ownership is
+// often a document (business registration, utility bill), not just a
+// photo, so PDFs are allowed here too. Stored in its own uploads/claims
+// folder, never mixed with public hostel photos.
+const claimProofUpload = multer({
+  storage: multer.diskStorage({
+    destination: path.join(__dirname, '..', 'uploads', 'claims'),
+    filename: (req, file, cb) => {
+      const uniqueName = crypto.randomUUID() + path.extname(file.originalname).toLowerCase();
+      cb(null, uniqueName);
+    },
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB max — scanned documents can be a bit larger than a photo
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPG, PNG, WEBP images or PDF documents are allowed.'));
+  },
+});
+
 // A hostel this far or closer to the selected campus is treated as "nearby"
 // by default. This is NOT a hard restriction — it only applies when a
 // campus has been selected as a reference point, and "Explore all hostels"
@@ -701,6 +722,16 @@ function handleUpload(req, res, next) {
   });
 }
 
+// Same idea, for the claim-proof document/photo.
+function handleClaimProofUpload(req, res, next) {
+  claimProofUpload.single('proof')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Could not process the uploaded file.' });
+    }
+    next();
+  });
+}
+
 // POST /api/hostels/:id/image — owner (of that hostel) or admin only.
 // Uploads a cover photo, replacing whatever was there before.
 router.post('/:id/image', requireAuth, handleUpload, async (req, res) => {
@@ -735,11 +766,17 @@ router.post('/:id/image', requireAuth, handleUpload, async (req, res) => {
 
 // POST /api/hostels/:id/claim — an owner requests ownership of a
 // directory-listed (unclaimed) hostel. Does NOT transfer ownership
-// immediately — an admin must approve first.
-router.post('/:id/claim', requireAuth, requireRole('owner'), async (req, res) => {
+// immediately — an admin must approve first, after reviewing the
+// uploaded proof of ownership (required, since anyone could otherwise
+// falsely claim a hostel they don't actually manage).
+router.post('/:id/claim', requireAuth, requireRole('owner'), handleClaimProofUpload, async (req, res) => {
   try {
     const { id } = req.params;
     const { message } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Proof of ownership (a photo or document) is required to submit a claim.' });
+    }
 
     const hostelResult = await pool.query(
       `SELECT h.id, u.email AS owner_email FROM hostels h JOIN users u ON u.id = h.owner_id WHERE h.id = $1`,
@@ -760,10 +797,12 @@ router.post('/:id/claim', requireAuth, requireRole('owner'), async (req, res) =>
       return res.status(400).json({ error: 'You already have a pending claim request for this hostel.' });
     }
 
+    const proofUrl = '/uploads/claims/' + req.file.filename;
+
     const result = await pool.query(
-      `INSERT INTO hostel_claims (hostel_id, requested_by, message)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [id, req.user.id, message || null]
+      `INSERT INTO hostel_claims (hostel_id, requested_by, message, proof_url)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, req.user.id, message || null, proofUrl]
     );
 
     res.status(201).json(result.rows[0]);
@@ -777,7 +816,7 @@ router.post('/:id/claim', requireAuth, requireRole('owner'), async (req, res) =>
 router.get('/admin/claims', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.message, c.created_at,
+      `SELECT c.id, c.message, c.created_at, c.proof_url,
               h.id AS hostel_id, h.name AS hostel_name,
               u.id AS requester_id, u.full_name AS requester_name, u.email AS requester_email
        FROM hostel_claims c

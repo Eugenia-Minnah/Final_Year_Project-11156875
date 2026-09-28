@@ -28,10 +28,18 @@ async function apiRequest(path, { method = 'GET', body, auth = false } = {}) {
 // ---- File upload helper (separate from apiRequest, which only sends JSON) ----
 // Used for hostel photo uploads. Kept as its own function so the existing
 // apiRequest() — used everywhere else in the app — is never touched.
-async function apiUpload(path, file) {
+async function apiUpload(path, file, fieldName, extraFields) {
+  fieldName = fieldName || 'image';
+  extraFields = extraFields || {};
+
   const token = localStorage.getItem('shf_token');
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append(fieldName, file);
+  Object.keys(extraFields).forEach(function (key) {
+    if (extraFields[key] !== undefined && extraFields[key] !== null) {
+      formData.append(key, extraFields[key]);
+    }
+  });
 
   const response = await fetch(API_BASE + path, {
     method: 'POST',
@@ -44,7 +52,7 @@ async function apiUpload(path, file) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || 'Could not upload the image.');
+    throw new Error(data.error || 'Could not upload the file.');
   }
   return data;
 }

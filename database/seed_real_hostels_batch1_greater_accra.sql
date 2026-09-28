@@ -20,9 +20,11 @@
 -- properties sourced from public research, not yet self-registered by
 -- their actual management on this platform.
 INSERT INTO users (full_name, email, password_hash, role)
-VALUES ('Hostel Directory (Unclaimed Listings)', 'directory@smarthostelfinder.local',
-        '$2a$10$CwTycUXWue0Thq9StjUM0uJ8G6r5vJHchTMkOo7RS0dK4bqUyrfF6', 'owner')
-ON CONFLICT (email) DO NOTHING;
+SELECT 'Hostel Directory (Unclaimed Listings)', 'directory@smarthostelfinder.local',
+  '$2a$10$CwTycUXWue0Thq9StjUM0uJ8G6r5vJHchTMkOo7RS0dK4bqUyrfF6', 'owner'
+WHERE NOT EXISTS (
+  SELECT 1 FROM users WHERE email = 'directory@smarthostelfinder.local'
+);
 
 -- ---------- VERIFIED OFF-CAMPUS HOSTELS ----------
 

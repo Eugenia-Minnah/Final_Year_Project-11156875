@@ -88,8 +88,16 @@ async function loadHostelDetail() {
     const claimBlock = (h.isUnclaimed && viewer && viewer.role === 'owner')
       ? `
         <div style="margin-top:12px; padding:14px 16px; background:#FFF8E6; border:1px solid #F0D98C; border-radius:10px;">
-          <p style="margin:0 0 8px; font-size:14px;"><strong>Is this your hostel?</strong> This listing was added from public research and isn't managed by anyone yet.</p>
-          <button type="button" class="btn btn-outline" id="claimHostelBtn">Claim this hostel</button>
+          <p style="margin:0 0 8px; font-size:14px;"><strong>Is this your hostel?</strong> This listing was added from public research and isn't managed by anyone yet. To claim it, upload proof that you own or manage it — e.g. a business registration certificate, a utility bill showing the address, or a photo of you at the hostel with signage visible. An admin will review it before approving.</p>
+          <div style="margin-bottom:8px;">
+            <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Proof of ownership (image or PDF, required)</label>
+            <input type="file" id="claimProofInput" accept="image/jpeg,image/png,image/webp,application/pdf" />
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Note for the admin (optional)</label>
+            <textarea id="claimMessageInput" rows="2" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:14px;" placeholder="e.g. how they can verify you manage this hostel"></textarea>
+          </div>
+          <button type="button" class="btn btn-outline" id="claimHostelBtn">Submit claim request</button>
         </div>
       `
       : (h.isUnclaimed
@@ -242,15 +250,21 @@ async function loadHostelDetail() {
     const claimBtn = document.getElementById('claimHostelBtn');
     if (claimBtn) {
       claimBtn.addEventListener('click', async () => {
-        const message = prompt('Optional: add a short note for the admin reviewing your claim (e.g. how they can verify you manage this hostel).') || '';
+        const proofFile = document.getElementById('claimProofInput').files[0];
+        if (!proofFile) {
+          alert('Please upload proof of ownership (an image or PDF) before submitting your claim.');
+          return;
+        }
+        const message = document.getElementById('claimMessageInput').value || '';
         claimBtn.textContent = 'Submitting...';
         claimBtn.disabled = true;
         try {
-          await apiRequest(`/api/hostels/${hostelId}/claim`, { method: 'POST', auth: true, body: { message } });
-          alert('Claim submitted! An admin will review it and transfer ownership if approved.');
+          await apiUpload(`/api/hostels/${hostelId}/claim`, proofFile, 'proof', { message });
+          alert('Claim submitted! An admin will review your proof and get back to you.');
+          loadHostelDetail();
         } catch (err) {
           alert('Could not submit claim: ' + err.message);
-          claimBtn.textContent = 'Claim this hostel';
+          claimBtn.textContent = 'Submit claim request';
           claimBtn.disabled = false;
         }
       });

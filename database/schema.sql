@@ -148,6 +148,7 @@ CREATE TABLE hostel_claims (
     status        VARCHAR(20) NOT NULL DEFAULT 'pending'
                   CHECK (status IN ('pending', 'approved', 'rejected')),
     message       TEXT,
+    proof_url     VARCHAR(255),
     reviewed_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
     reviewed_at   TIMESTAMP,
     created_at    TIMESTAMP NOT NULL DEFAULT NOW()

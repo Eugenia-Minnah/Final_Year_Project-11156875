@@ -27,6 +27,8 @@ app.use(express.json({
 // tries to write to it.
 const uploadsDir = path.join(__dirname, 'uploads', 'hostels');
 fs.mkdirSync(uploadsDir, { recursive: true });
+const claimUploadsDir = path.join(__dirname, 'uploads', 'claims');
+fs.mkdirSync(claimUploadsDir, { recursive: true });
 
 // API routes
 app.use('/api/auth', authRoutes);

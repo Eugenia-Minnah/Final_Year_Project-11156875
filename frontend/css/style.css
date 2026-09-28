@@ -32,7 +32,8 @@ a { text-decoration: none; color: inherit; }
   border-bottom: 1px solid var(--border);
 }
 
-.navbar .logo {
+.navbar .logo,
+.dash-header .logo {
   display: flex;
   align-items: center;
   gap: 10px;

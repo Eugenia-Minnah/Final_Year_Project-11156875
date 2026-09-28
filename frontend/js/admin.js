@@ -128,6 +128,9 @@ async function loadClaimRequests() {
           <div style="font-size:13px; color:var(--text-muted);">
             Requested by ${escapeHtml(c.requester_name)} (${escapeHtml(c.requester_email)})
             ${c.message ? '<br>"' + escapeHtml(c.message) + '"' : ''}
+            <br>${c.proof_url
+              ? `<a href="${escapeHtml(c.proof_url)}" target="_blank" rel="noopener" style="color:var(--green); font-weight:600;">📎 View proof of ownership</a>`
+              : '<span style="color:#B3261E; font-weight:600;">⚠ No proof uploaded (submitted before proof was required)</span>'}
           </div>
         </div>
         <div style="display:flex; gap:8px;">
