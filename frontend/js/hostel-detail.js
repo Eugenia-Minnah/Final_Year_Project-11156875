@@ -82,7 +82,7 @@ async function loadHostelDetail() {
       : '';
 
     const messageButton = (viewer && viewer.role === 'student')
-      ? `<button type="button" class="btn btn-outline" id="messageOwnerBtn" style="margin-top:12px; margin-left:8px;">💬 Message the owner</button>`
+      ? `<a href="student-inbox.html?hostelId=${hostelId}&hostelName=${encodeURIComponent(h.name)}" class="btn btn-primary" style="margin-top:12px; margin-left:8px; display:inline-block;">💬 Message the owner</a>`
       : (!viewer ? `<a href="signin.html" class="btn btn-outline" style="margin-top:12px; margin-left:8px; display:inline-block;">💬 Sign in to message the owner</a>` : '');
 
     const claimBlock = (h.isUnclaimed && viewer && viewer.role === 'owner')
@@ -208,23 +208,6 @@ async function loadHostelDetail() {
         }
       });
     });
-
-    // ---------- Message the owner ----------
-    const messageOwnerBtn = document.getElementById('messageOwnerBtn');
-    if (messageOwnerBtn) {
-      messageOwnerBtn.addEventListener('click', async () => {
-        const message = prompt(`Send a message to the owner of "${h.name}":`);
-        if (!message || !message.trim()) return;
-        messageOwnerBtn.disabled = true;
-        try {
-          await apiRequest('/api/chat/start', { method: 'POST', auth: true, body: { hostelId, message } });
-          window.location.href = 'student-inbox.html';
-        } catch (err) {
-          alert('Could not send message: ' + err.message);
-          messageOwnerBtn.disabled = false;
-        }
-      });
-    }
 
     // ---------- Submit a review ----------
     const submitReviewBtn = document.getElementById('submitReviewBtn');

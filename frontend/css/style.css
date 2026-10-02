@@ -235,7 +235,7 @@ a { text-decoration: none; color: inherit; }
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(11, 27, 43, 0.55), rgba(14, 92, 78, 0.4));
+  background: linear-gradient(135deg, rgba(11, 27, 43, 0.32), rgba(14, 92, 78, 0.22));
 }
 .auth-visual-overlay {
   display: none; /* quote text removed per request — element stays in HTML but is hidden */
