@@ -16,6 +16,15 @@ const chatRoutes = require('./routes/chat');
 
 const app = express();
 
+// Railway/Render (and most hosts) terminate HTTPS at a reverse proxy and
+// forward plain HTTP to this server, setting an X-Forwarded-Proto header
+// to say so. Without this, req.protocol always reports 'http' once
+// deployed — even on a real https:// site — which would make password
+// reset emails and Paystack payment callback links wrongly use http://.
+// Harmless locally: there's no proxy in front of localhost, so this has
+// no effect there.
+app.set('trust proxy', 1);
+
 app.use(cors());              // allows the frontend to call this API
 app.use(express.json({
   verify: (req, res, buf) => {

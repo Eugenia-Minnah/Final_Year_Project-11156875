@@ -18,37 +18,32 @@
   </nav>
 
   <div class="auth-split">
-    <div class="auth-visual" style="background-image: url('images/auth-photo.jpg')">
-      <div class="auth-visual-overlay">
-        <p>"Verified hostels, real photos, no surprises."</p>
-      </div>
-    </div>
-
+    <div class="auth-visual" style="background-image: url('images/auth-photo.jpg')"></div>
     <div class="auth-form-side">
-      <div class="auth-card">
-        <h1>Student Sign In</h1>
-        <p class="sub">Sign in to book hostels, save favourites, and manage your bookings.</p>
+    <div class="auth-card">
+      <h1>Student Sign In</h1>
+      <p class="sub">Sign in to book hostels, save favourites, and manage your bookings.</p>
 
-        <div class="error-msg" id="errorMsg"></div>
+      <div class="error-msg" id="errorMsg"></div>
 
-        <form id="signinForm" data-expected-role="student">
-          <div class="field">
-            <label for="email">Email</label>
-            <input type="email" id="email" required placeholder="you@example.com" />
+      <form id="signinForm" data-expected-role="student">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="••••••••" />
+          <div style="text-align: right; margin-top: 6px;">
+            <a href="forgot-password.html" style="font-size: 13px; color: var(--green); font-weight: 600;">Forgot password?</a>
           </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <input type="password" id="password" required placeholder="••••••••" />
-            <div style="text-align: right; margin-top: 6px;">
-              <a href="forgot-password.html" style="font-size: 13px; color: var(--green); font-weight: 600;">Forgot password?</a>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary full-width">Sign in</button>
-        </form>
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Sign in</button>
+      </form>
 
-        <p class="auth-switch">Don't have an account? <a href="signup.html">Create one</a></p>
-        <p class="auth-switch" style="margin-top:6px;">Are you a hostel owner? <a href="owner-login.html">Owner Login</a></p>
-      </div>
+      <p class="auth-switch">Don't have an account? <a href="signup.html">Create one</a></p>
+      <p class="auth-switch" style="margin-top:6px;">Are you a hostel owner? <a href="owner-login.html">Owner Login</a></p>
+    </div>
     </div>
   </div>
 
