@@ -1,14 +1,16 @@
-# Smart Hostel Finder
+# HostelScout
 
-A full-stack web application for university students in Ghana to find, compare, and book **verified, off-campus** private hostels near their campus — with real distance calculation, not just a static directory.
+A full-stack web application for university students in Ghana to find, compare, book, and message the owners of **verified, off-campus** private hostels near their campus — with real travel distance, not just a static directory.
 
 Built as a final-year project (BSc Computing/IT, University of Ghana).
+
+> Formerly named "Smart Hostel Finder" — renamed to HostelScout partway through development after discovering the original name was already in use by an existing, unrelated site.
 
 ---
 
 ## What makes this "smart"
 
-Unlike a plain hostel listing site, this application calculates the **real geographic distance** (Haversine formula) between a student's selected campus and every hostel with known coordinates — live, on every search. A hostel is never permanently tied to one university: the same physical hostel can appear in searches from multiple nearby campuses, each with its own correctly recalculated distance.
+Unlike a plain hostel listing site, this application calculates **real road-network distance and driving time** (via the OSRM routing engine) between a student's selected campus and every hostel with known coordinates — live, on every search — the same kind of result you'd get from Google or Yandex Maps, not a straight-line guess. If the routing service is ever unreachable, the app automatically falls back to a straight-line estimate rather than failing outright. A hostel is never permanently tied to one university: the same physical hostel can appear in searches from multiple nearby campuses, each with its own correctly recalculated distance.
 
 ---
 
@@ -20,21 +22,23 @@ Unlike a plain hostel listing site, this application calculates the **real geogr
 | Backend | Node.js + Express (JavaScript) |
 | Frontend | HTML, CSS, vanilla JavaScript (no framework) |
 | Payments | Paystack (card + Mobile Money) |
-| Maps | Leaflet.js + OpenStreetMap (free, no API key) |
+| Maps & distance | Leaflet.js + OpenStreetMap for maps (free, no API key); OSRM for real road-distance/driving-time routing |
 | Email | Nodemailer via Gmail SMTP (optional) |
 
 ---
 
 ## Core features
 
-- **Region → University → Campus** cascading search, with real-time distance calculation to every hostel
+- **Region → University → Campus** cascading search, with real road-distance and driving-time calculation to every hostel
 - **Role-based access**: separate student, hostel owner, and admin portals with independent login pages and dashboards — a student can never see owner-management tools and vice versa
 - **Booking flow** with real Paystack deposit payments (card + Mobile Money)
-- **Reviews** — students can rate and review hostels they've engaged with
+- **In-app chat** — a student can message a hostel's owner directly from the hostel's page; both sides have a dedicated inbox to view and reply to conversations
+- **Reviews** — students can rate and review hostels they've engaged with (one review per student per hostel)
 - **Admin verification workflow** — new hostel listings require admin approval before appearing as "Verified"
-- **Hostel claiming** — an owner can request ownership of a directory-researched listing; an admin reviews and approves before ownership transfers
+- **Hostel claiming, with proof of ownership** — an owner can request ownership of a directory-researched listing by uploading proof (a business registration certificate, a utility bill, or a photo of themselves at the hostel); an admin reviews the proof and approves or rejects before ownership transfers
+- **Refund tracking for cancelled bookings** — if a student cancels a booking whose deposit was already paid, it's flagged "Refund pending" instead of silently staying marked "Paid"; an admin can mark it "Refunded" once they've manually sent the money back (no live payment-API refund call is made automatically — this is a deliberate choice, see Known limitations)
 - **Photo uploads** for hostel listings (owner-managed)
-- **In-app notifications** — students and owners are notified of booking confirmations, hostel approvals, and claim decisions
+- **In-app notifications** — students and owners are notified of booking confirmations, hostel approvals, claim decisions, and new chat messages
 - **Self-service profile pages** for students and owners (edit name/phone/campus, change password)
 - **Password reset** via email (falls back to console-logging the link in local development if email isn't configured)
 - **Pagination** on the full hostel search page
@@ -51,33 +55,36 @@ This project deliberately avoids fabricated demo data. Every hostel currently in
 ## Folder structure
 
 ```
-smart-hostel-finder/
+hostelscout/
   database/
-    schema.sql                  -> base tables
+    schema.sql                  -> base tables (current — includes all columns/constraints below)
     *.sql                       -> incremental migrations (run in date order -- see Setup below)
   backend/
     server.js                   -> Express entry point
-    db.js                       -> PostgreSQL connection pool
+    db.js                       -> PostgreSQL connection pool (auto-detects local vs. hosted DB for SSL)
     middleware/auth.js          -> JWT auth + role guards
     routes/
       auth.js                   -> signup / login / profile / password reset
-      hostels.js                -> search, create/edit, verification, claims
-      bookings.js               -> booking + Paystack payment flow
-      locations.js              -> region/university/campus lookups
+      hostels.js                -> search, create/edit, verification, claims (+ proof upload)
+      bookings.js               -> booking + Paystack payment flow + cancellation/refund tracking
+      locations.js               -> region/university/campus lookups
       notifications.js          -> in-app notifications
+      chat.js                   -> student <-> owner messaging
     utils/
       geocode.js / paystack.js / mailer.js / notify.js
+      routing.js                -> real road-distance/driving-time via OSRM, with straight-line fallback
     scripts/
       geocode-missing-hostels.js
   frontend/
     index.html                  -> public landing page (featured hostels)
     explore.html                -> full search page (all hostels, filters, pagination, map)
-    student-login.html / student-dashboard.html / student-profile.html
-    owner-login.html / owner-dashboard.html / owner-profile.html
+    student-login.html / student-dashboard.html / student-profile.html / student-inbox.html
+    owner-login.html / owner-dashboard.html / owner-profile.html / owner-inbox.html
     admin-login.html / admin.html
     add-hostel.html / edit-hostel.html / hostel.html
     payment-callback.html
-    js/                         -> one file per page/feature, plus shared helpers (api.js, map.js, etc.)
+    images/                     -> hero-bg.jpg, auth-photo.jpg (site photography)
+    js/                         -> one file per page/feature, plus shared helpers (api.js, map.js, inbox.js, etc.)
     css/style.css
 ```
 
@@ -115,9 +122,10 @@ psql -U postgres -d smart_hostel_finder -f add_booking_payments.sql
 psql -U postgres -d smart_hostel_finder -f add_hostel_claims.sql
 psql -U postgres -d smart_hostel_finder -f add_notifications.sql
 psql -U postgres -d smart_hostel_finder -f fix_broken_seed_password.sql
+psql -U postgres -d smart_hostel_finder -f add_chat.sql
 ```
 
-If any migration errors saying a column/table already exists, that's harmless -- it means it was already applied; move on to the next one.
+If any migration errors saying a column/table already exists, that's harmless -- it means it was already applied (this is common since `schema.sql` itself already contains the final, current definition of every table — the numbered migrations after it exist as a historical record of how the schema evolved, not because they're all individually required on a brand-new database); move on to the next one.
 
 ### 2. Backend
 
@@ -143,14 +151,26 @@ Runs at `http://localhost:5000` -- this single server serves both the API and th
 | Owner | `owner@example.com` | `password123` |
 | Admin | `admin@example.com` | `password123` |
 
-Admin has no public link -- go directly to `/admin-login.html`.
+Admin has no public link -- go directly to `/admin-login.html`. A handful of additional pre-seeded student accounts (for testing multiple reviewers/bookers at once) also use `password123` — see `database/seed_real_hostels_batch1_greater_accra.sql` for the full list.
+
+---
+
+## Deployment
+
+The backend is a single Node/Express server that also serves the frontend, so it deploys as one unit — no separate frontend hosting needed. Two things specifically matter when deploying somewhere other than localhost:
+
+- **Database SSL**: `db.js` automatically enables SSL for any `DATABASE_URL` that isn't `localhost`/`127.0.0.1`, which is what hosted Postgres providers (Railway, Render, etc.) require.
+- **`trust proxy`**: `server.js` sets this so password-reset and Paystack payment links are generated with the correct `https://` scheme once behind a hosting platform's reverse proxy — without it, those links would incorrectly use `http://`.
+
+**Uploaded files (hostel photos, claim-proof documents) are stored on local disk**, not a third-party service like Cloudinary — this was a deliberate choice for this project. That means the hosting platform needs to provide **persistent storage**, or uploaded files will be lost on every restart/redeploy. Confirm your host supports this (e.g. Railway's "Volumes" feature, mounted to `backend/uploads`) before relying on uploads surviving long-term.
 
 ---
 
 ## Known limitations (honest, for the record)
 
-- **Distance is straight-line ("as the crow flies"), not real walking/driving distance.** Getting actual routing requires a paid API (Google Directions); "View Route" instead opens Google Maps directions in a new tab as a practical middle ground.
-- **Hostel claim verification is manual.** An admin approving a claim currently relies on their own judgement (e.g. calling the phone number on file), not an automated identity check.
+- **Road-distance relies on a free public routing service (OSRM's demo server)**, which has no uptime guarantee. If it's ever down or slow, the app automatically falls back to a straight-line distance estimate rather than failing — so distances stay available, just less precise, during an outage.
+- **Hostel claim verification is manual.** An admin reviews the owner's uploaded proof (certificate, bill, or photo) and approves or rejects based on their own judgement — there's no automated identity/document verification.
+- **Refunds are tracked, not automated.** Cancelling a paid booking flags it for an admin to refund manually (e.g. via Paystack's own dashboard or Mobile Money) and mark as done — the app does not call a live payment-API refund on the student's behalf.
 - **Coverage is uneven across Ghana** -- see "Real hostel data" above.
 - **One photo per hostel**, not a gallery.
 - **Geocoding must happen in the browser, not the backend** -- OpenStreetMap's free Nominatim service blocks automated server-to-server geocoding requests per its usage policy; only human-triggered browser requests are allowed. `backend/utils/geocode.js` is unused for this reason -- see `frontend/js/geocode-client.js` for the actual (working) implementation.
@@ -159,4 +179,4 @@ Admin has no public link -- go directly to `/admin-login.html`.
 
 ## Not yet built
 
-Wishlist/favoriting, owner-to-student in-app chat, owner analytics (view/booking counts), an admin profile page, and a dedicated automated test suite.
+Wishlist/favoriting, owner analytics (view/booking counts), an admin profile page, and a dedicated automated test suite.
