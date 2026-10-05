@@ -17,7 +17,7 @@ Unlike a plain hostel listing site, this application calculates **real road-netw
 ## Stack
 
 | Layer | Technology |
-|---|---|
+| --- | --- |
 | Database | PostgreSQL |
 | Backend | Node.js + Express (JavaScript) |
 | Frontend | HTML, CSS, vanilla JavaScript (no framework) |
@@ -54,7 +54,7 @@ This project deliberately avoids fabricated demo data. Every hostel currently in
 
 ## Folder structure
 
-```
+```text
 hostelscout/
   database/
     schema.sql                  -> base tables (current — includes all columns/constraints below)
@@ -96,7 +96,7 @@ hostelscout/
 
 Create the database, then run the migrations **in this order** (schema first, then chronologically):
 
-```
+```bash
 psql -U postgres -c "CREATE DATABASE smart_hostel_finder;"
 cd database
 psql -U postgres -d smart_hostel_finder -f schema.sql
@@ -129,7 +129,7 @@ If any migration errors saying a column/table already exists, that's harmless --
 
 ### 2. Backend
 
-```
+```bash
 cd backend
 cp .env.example .env
 ```
@@ -146,7 +146,7 @@ Runs at `http://localhost:5000` -- this single server serves both the API and th
 ### 3. Test accounts
 
 | Role | Email | Password |
-|---|---|---|
+| --- | --- | --- |
 | Student | `student@example.com` | `password123` |
 | Owner | `owner@example.com` | `password123` |
 | Admin | `admin@example.com` | `password123` |

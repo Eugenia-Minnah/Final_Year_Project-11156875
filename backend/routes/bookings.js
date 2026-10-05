@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
-const { createNotification } = require('../utils/notify');
+const { createNotification, notifyAllAdmins } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -115,6 +115,16 @@ router.post('/:id/cancel', requireAuth, requireRole('student'), async (req, res)
     await client.query('UPDATE rooms SET available_units = available_units + 1 WHERE id = $1', [booking.room_id]);
 
     await client.query('COMMIT');
+
+    if (newPaymentStatus === 'refund_pending') {
+      const hostelInfo = await pool.query(
+        `SELECT h.name FROM rooms r JOIN hostels h ON h.id = r.hostel_id WHERE r.id = $1`,
+        [booking.room_id]
+      );
+      const hostelName = hostelInfo.rows[0] ? hostelInfo.rows[0].name : 'a hostel';
+      notifyAllAdmins(`Refund needed: a cancelled booking at "${hostelName}" was already paid.`, '/admin.html');
+    }
+
     res.json({ message: 'Booking cancelled.' });
   } catch (err) {
     await client.query('ROLLBACK');

@@ -178,35 +178,60 @@ async function loadHostelDetail() {
     }
 
     // ---------- Book a room ----------
+    const bookingOverlay = document.getElementById('bookingConfirmOverlay');
+    const bookingConfirmText = document.getElementById('bookingConfirmText');
+    const bookingConfirmBtn = document.getElementById('bookingConfirmBtn');
+    const bookingCancelBtn = document.getElementById('bookingCancelBtn');
+    let pendingRoomId = null;
+
+    function closeBookingModal() {
+      bookingOverlay.style.display = 'none';
+      pendingRoomId = null;
+    }
+
     document.querySelectorAll('.book-room-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const roomId = btn.getAttribute('data-room-id');
+      btn.addEventListener('click', () => {
         const price = Number(btn.getAttribute('data-price'));
         const ownerDeposit = btn.getAttribute('data-deposit');
         const deposit = ownerDeposit ? Number(ownerDeposit) : Math.round(price * 0.1);
         const depositNote = ownerDeposit ? '' : ' (default 10% of the yearly price, since the owner hasn\'t set a specific deposit)';
 
-        if (!confirm(`Book this room? A deposit of GH₵${deposit.toLocaleString()} will be recorded for this booking${depositNote}.`)) {
-          return;
-        }
-
-        try {
-          const booking = await apiRequest('/api/bookings', { method: 'POST', auth: true, body: { roomId } });
-
-          // Straight into payment — this is now a real deposit, not just
-          // a recorded intent. If starting payment fails for any reason,
-          // the booking itself is still safely saved either way.
-          try {
-            const payment = await apiRequest(`/api/bookings/${booking.id}/pay`, { method: 'POST', auth: true });
-            window.location.href = payment.authorizationUrl;
-          } catch (payErr) {
-            alert('Booking saved, but starting payment failed: ' + payErr.message + '\nYou can try paying again from "My bookings" on your dashboard.');
-            loadHostelDetail();
-          }
-        } catch (err) {
-          alert('Could not complete booking: ' + err.message);
-        }
+        pendingRoomId = btn.getAttribute('data-room-id');
+        bookingConfirmText.textContent = `A deposit of GH₵${deposit.toLocaleString()} will be recorded for this booking${depositNote}.`;
+        bookingOverlay.style.display = 'flex';
       });
+    });
+
+    bookingCancelBtn.addEventListener('click', closeBookingModal);
+    bookingOverlay.addEventListener('click', (e) => {
+      if (e.target === bookingOverlay) closeBookingModal();
+    });
+
+    bookingConfirmBtn.addEventListener('click', async () => {
+      const roomId = pendingRoomId;
+      if (!roomId) return;
+      bookingConfirmBtn.disabled = true;
+      bookingConfirmBtn.textContent = 'Booking...';
+
+      try {
+        const booking = await apiRequest('/api/bookings', { method: 'POST', auth: true, body: { roomId } });
+
+        // Straight into payment — this is now a real deposit, not just
+        // a recorded intent. If starting payment fails for any reason,
+        // the booking itself is still safely saved either way.
+        try {
+          const payment = await apiRequest(`/api/bookings/${booking.id}/pay`, { method: 'POST', auth: true });
+          window.location.href = payment.authorizationUrl;
+        } catch (payErr) {
+          alert('Booking saved, but starting payment failed: ' + payErr.message + '\nYou can try paying again from "My bookings" on your dashboard.');
+          closeBookingModal();
+          loadHostelDetail();
+        }
+      } catch (err) {
+        alert('Could not complete booking: ' + err.message);
+        bookingConfirmBtn.disabled = false;
+        bookingConfirmBtn.textContent = 'Confirm & pay';
+      }
     });
 
     // ---------- Submit a review ----------

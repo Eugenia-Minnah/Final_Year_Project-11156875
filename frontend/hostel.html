@@ -27,6 +27,36 @@
       <p class="empty-state">Loading hostel details…</p>
     </section>
 
+    <div
+      id="bookingConfirmOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(11, 27, 43, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 14px;
+          padding: 28px;
+          max-width: 400px;
+          width: 90%;
+        "
+      >
+        <h3 style="margin: 0 0 10px;">Confirm booking</h3>
+        <p id="bookingConfirmText" style="color: var(--text-muted); margin: 0 0 20px;"></p>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-primary" id="bookingConfirmBtn" style="flex: 1;">Confirm & pay</button>
+          <button type="button" class="btn btn-outline" id="bookingCancelBtn" style="flex: 1;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-col footer-brand">

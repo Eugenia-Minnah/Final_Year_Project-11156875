@@ -3,12 +3,33 @@
 // with Approve/Reject actions.
 
 if (!isLoggedIn()) {
-  window.location.href = 'signin.html';
+  window.location.href = 'admin-login.html';
 }
 const user = currentUser();
 if (user && user.role !== 'admin') {
   document.body.innerHTML = '<div class="section"><p class="empty-state">This page is for admins only. <a href="dashboard.html">Back to dashboard</a></p></div>';
 }
+if (user) {
+  document.getElementById('userName').textContent = user.fullName || user.email;
+}
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+
+// ---------- Account menu (hamburger) dropdown ----------
+const accountMenuBtn = document.getElementById('accountMenuBtn');
+const accountDropdown = document.getElementById('accountDropdown');
+accountMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = accountDropdown.style.display === 'block';
+  accountDropdown.style.display = isOpen ? 'none' : 'block';
+  accountMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+document.addEventListener('click', (e) => {
+  if (!accountDropdown.contains(e.target) && e.target !== accountMenuBtn) {
+    accountDropdown.style.display = 'none';
+    accountMenuBtn.setAttribute('aria-expanded', 'false');
+  }
+});
 
 async function loadPendingHostels() {
   const list = document.getElementById('pendingList');

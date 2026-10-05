@@ -13,7 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole, optionalAuth } = require('../middleware/auth');
-const { createNotification } = require('../utils/notify');
+const { createNotification, notifyAllAdmins } = require('../utils/notify');
 const { getRoadDistances } = require('../utils/routing');
 
 const router = express.Router();
@@ -441,6 +441,11 @@ router.post('/', requireAuth, requireRole('owner', 'admin'), async (req, res) =>
     }
 
     await client.query('COMMIT');
+
+    if (req.user.role !== 'admin') {
+      notifyAllAdmins(`New hostel pending approval: "${hostel.name}"`, '/admin.html');
+    }
+
     res.status(201).json({ ...hostel, rooms: insertedRooms });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -779,7 +784,7 @@ router.post('/:id/claim', requireAuth, requireRole('owner'), handleClaimProofUpl
     }
 
     const hostelResult = await pool.query(
-      `SELECT h.id, u.email AS owner_email FROM hostels h JOIN users u ON u.id = h.owner_id WHERE h.id = $1`,
+      `SELECT h.id, h.name, u.email AS owner_email FROM hostels h JOIN users u ON u.id = h.owner_id WHERE h.id = $1`,
       [id]
     );
     if (hostelResult.rows.length === 0) {
@@ -804,6 +809,8 @@ router.post('/:id/claim', requireAuth, requireRole('owner'), handleClaimProofUpl
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [id, req.user.id, message || null, proofUrl]
     );
+
+    notifyAllAdmins(`New hostel claim request for "${hostelResult.rows[0].name}"`, '/admin.html');
 
     res.status(201).json(result.rows[0]);
   } catch (err) {

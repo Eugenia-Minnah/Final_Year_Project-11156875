@@ -16,4 +16,18 @@ async function createNotification(userId, message, link = null) {
   }
 }
 
-module.exports = { createNotification };
+// For anything an admin needs to act on (a new hostel pending approval, a
+// new claim request, a new refund request) — notifies every admin user,
+// since there may be more than one.
+async function notifyAllAdmins(message, link = null) {
+  try {
+    const admins = await pool.query("SELECT id FROM users WHERE role = 'admin'");
+    for (const admin of admins.rows) {
+      await createNotification(admin.id, message, link);
+    }
+  } catch (err) {
+    console.error('Could not notify admins:', err.message);
+  }
+}
+
+module.exports = { createNotification, notifyAllAdmins };
