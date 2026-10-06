@@ -6,7 +6,16 @@
 -- =========================================================
 
 -- Clean slate for seed tables (order handles foreign keys)
-TRUNCATE reviews, bookings, rooms, hostels, hostel_claims, notifications, users, campuses, universities, regions RESTART IDENTITY CASCADE;
+TRUNCATE TABLE reviews;
+TRUNCATE TABLE bookings;
+TRUNCATE TABLE rooms;
+TRUNCATE TABLE hostels;
+TRUNCATE TABLE hostel_claims;
+TRUNCATE TABLE notifications;
+TRUNCATE TABLE users;
+TRUNCATE TABLE campuses;
+TRUNCATE TABLE universities;
+TRUNCATE TABLE regions;
 
 -- ---------------------------------------------------------
 -- 1. REGIONS OF GHANA (All 16 administrative regions)

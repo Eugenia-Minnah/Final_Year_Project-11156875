@@ -14,8 +14,9 @@
 
 -- ---------- 1. Campuses get their own region + city ----------
 -- (latitude/longitude columns already exist from an earlier migration)
-ALTER TABLE campuses ADD COLUMN region_id INTEGER REFERENCES regions(id);
-ALTER TABLE campuses ADD COLUMN city VARCHAR(100);
+ALTER TABLE campuses ADD region_id INT NULL;
+ALTER TABLE campuses ADD CONSTRAINT FK_campuses_region FOREIGN KEY (region_id) REFERENCES regions(id);
+ALTER TABLE campuses ADD city VARCHAR(100) NULL;
 
 -- Assign each existing campus to its REAL region/city — this is the key fix.
 -- Note some universities (e.g. University of Ghana, GIMPA) now correctly

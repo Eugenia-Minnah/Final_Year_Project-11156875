@@ -5,4 +5,4 @@
 -- yearly price only when an owner hasn't specified their own amount.
 -- =========================================================
 
-ALTER TABLE rooms ADD COLUMN deposit_amount NUMERIC(10,2);
+ALTER TABLE rooms ADD deposit_amount NUMERIC(10,2);

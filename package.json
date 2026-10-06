@@ -1,0 +1,9 @@
+{
+  "name": "hostelscout-root",
+  "private": true,
+  "description": "Root-level package.json so Railway (and any Nixpacks-based host) detects this as a Node project and knows where the real app lives. Do not add dependencies here — the actual backend dependencies live in backend/package.json.",
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "start": "node backend/server.js"
+  }
+}
