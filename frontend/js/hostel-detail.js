@@ -97,6 +97,7 @@ async function loadHostelDetail() {
             <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Note for the admin (optional)</label>
             <textarea id="claimMessageInput" rows="2" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:14px;" placeholder="e.g. how they can verify you manage this hostel"></textarea>
           </div>
+          <div id="claimMessage" style="display:none; margin-bottom:10px; padding:10px 12px; border-radius:8px; font-size:13px;"></div>
           <button type="button" class="btn btn-outline" id="claimHostelBtn">Submit claim request</button>
         </div>
       `
@@ -257,10 +258,19 @@ async function loadHostelDetail() {
     // ---------- Claim this hostel ----------
     const claimBtn = document.getElementById('claimHostelBtn');
     if (claimBtn) {
+      const claimMessageBox = document.getElementById('claimMessage');
+      function showClaimMessage(text) {
+        claimMessageBox.textContent = text;
+        claimMessageBox.style.background = '#FDECEC';
+        claimMessageBox.style.color = '#B3261E';
+        claimMessageBox.style.display = 'block';
+      }
+
       claimBtn.addEventListener('click', async () => {
+        claimMessageBox.style.display = 'none';
         const proofFile = document.getElementById('claimProofInput').files[0];
         if (!proofFile) {
-          alert('Please upload proof of ownership (an image or PDF) before submitting your claim.');
+          showClaimMessage('Please upload proof of ownership (an image or PDF) before submitting your claim.');
           return;
         }
         const message = document.getElementById('claimMessageInput').value || '';
@@ -268,10 +278,12 @@ async function loadHostelDetail() {
         claimBtn.disabled = true;
         try {
           await apiUpload(`/api/hostels/${hostelId}/claim`, proofFile, 'proof', { message });
-          alert('Claim submitted! An admin will review your proof and get back to you.');
-          loadHostelDetail();
+          // Replace the form with a confirmation, so it can't be submitted twice.
+          claimBtn.parentElement.innerHTML =
+            '<p style="margin:0; padding:10px 12px; border-radius:8px; font-size:14px; background:#E4F3EF; color:#0E5C4E;">' +
+            '<strong>Claim submitted.</strong> An admin will review your proof and get back to you.</p>';
         } catch (err) {
-          alert('Could not submit claim: ' + err.message);
+          showClaimMessage('Could not submit claim: ' + err.message);
           claimBtn.textContent = 'Submit claim request';
           claimBtn.disabled = false;
         }
